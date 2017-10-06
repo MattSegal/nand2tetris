@@ -1,0 +1,64 @@
+function IntStack.new 0
+push constant 1
+call Memory.alloc 1
+pop pointer 0
+push constant 0
+pop this 0
+push pointer 0
+return
+function IntStack.push 0
+push argument 0
+pop pointer 0
+push argument 1
+push this 0
+call List.new 2
+pop this 0
+push constant 0
+return
+function IntStack.pop 1
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+push this 0
+push constant 0
+eq
+not
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 0
+call IntList.getData 1
+pop local 0
+push this 0
+call IntList.getNext 1
+pop this 0
+label IF_FALSE0
+push local 0
+return
+function IntStack.print 0
+push argument 0
+pop pointer 0
+push this 0
+call IntList.print 1
+pop temp 0
+push constant 0
+return
+function IntStack.dispose 0
+push argument 0
+pop pointer 0
+push this 0
+call IntList.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function IntStack.isEmpty 0
+push argument 0
+pop pointer 0
+push this 0
+push constant 0
+eq
+return

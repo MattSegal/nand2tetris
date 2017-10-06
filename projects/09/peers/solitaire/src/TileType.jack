@@ -1,0 +1,13 @@
+class TileType {
+    function int EmptyTile() {
+        return 0;
+    }
+
+    function int BoardTile() {
+        return -1;
+    }
+
+    function int MarbledTile() {
+        return 1;
+    }
+}

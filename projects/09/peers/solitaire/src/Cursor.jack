@@ -1,0 +1,26 @@
+class Cursor {
+    static int STATUS_LIGHT;
+    static int STATUS_DARK;
+
+    field BoardTile tile;
+    field int status;
+
+    constructor Cursor new(BoardTile initialTile) {
+        let tile = initialTile;
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method BoardTile getSelectedTile() {
+        return tile;
+    }
+
+    method void moveTo(BoardTile new_tile) {
+        let tile = new_tile;
+        return;
+    }
+}

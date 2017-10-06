@@ -1,0 +1,10 @@
+function TileType.EmptyTile 0
+push constant 0
+return
+function TileType.BoardTile 0
+push constant 1
+neg
+return
+function TileType.MarbledTile 0
+push constant 1
+return

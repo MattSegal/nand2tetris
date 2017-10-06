@@ -1,0 +1,245 @@
+/**
+ * This class implements the calculator. 
+ * The algorithm used is the shunting yard algorithm courtesy of Edsgar Dijkstra
+ * see https://en.wikipedia.org/wiki/Shunting-yard_algorithm if you want to know
+ * how the algorithm works. This implementation supports to following operators:
+ * ( ) + - * / and regular Jack-numbers as operands
+ */
+class Jackulator {
+	
+	field StringQueue postfix; // the queue which will contain the postfix-expression
+	field StringStack operatorStack; // intermediary stack necessary for generating the post-expression
+	field IntStack calcStack; // the stack used for actually calculating a postfix-expression
+
+	/**
+	 * Constructor. Simply initializes the internal datastructures.
+	 */
+	constructor Jackulator new() {
+		let postfix = StringQueue.new();
+		let operatorStack = StringStack.new();
+		let calcStack = IntStack.new();
+		return this; 
+	}
+
+	/**
+	 * Destruct this object
+	 */
+	method void dispose() {
+		do postfix.dispose();
+		do operatorStack.dispose();
+		do calcStack.dispose();
+		// Uses an OS routine to recycle this object.
+		do Memory.deAlloc(this);
+		return;
+	}
+
+	/**
+	 * This method implements handling the main output and input-related code.
+	 * The implementation seems robust enough (except you provoke a division by 0) 
+	 * that it doesn't crash if you feed it ill-formed expressions but the result you 
+	 * will get is (obviously) garbage.
+	 * (S*** in, s*** out!)
+	 */
+	method void run() {
+		var boolean found, quit;
+		var int index;
+		var String input;
+		var char currentChar;
+		let quit = false;
+		do Output.printString("Welcome to Jackulator v1.0");
+		while (~quit) {
+			let postfix = StringQueue.new();
+			let operatorStack = StringStack.new();
+			let calcStack = IntStack.new();
+			let found = false;
+			do Output.println();
+			let input = Keyboard.readLine("Enter a mathematic expression, 'h' or 'q': ");
+			let index = 0;
+			if (input.length() > 0) { // handle special case if user just hits enter button...
+				if (input.charAt(0) = 72) { // handle 'h' (=help)
+					do Output.printString("Valid operators: '(', ')', '+', '-', '*', '/'");
+					do Output.println();
+					do Output.printString("Valid operands: 0>=val<=32767");
+					do Output.println();
+					let found = true;
+				}
+				if(input.charAt(0) = 81) { // handle 'q' (=quit)
+					do Output.printString("Good bye! Exiting...");
+					do Output.println();
+					let found = true;
+					let quit = true;
+				}
+				if (~found) { // looks like we have a mathematical expression => parse
+					while (~(index = -1) & (index < input.length())) {
+						let currentChar = input.charAt(index);
+						if(~found) { 
+							let index = shunting(currentChar, index, input);
+						}
+						if (~(index = -1)) {
+							let index = index + 1;
+						}
+					}
+					if (~(index = -1)) { // only output the postfix-expression and the result if it makes sense
+						// now enqueue the remaining the operators on the operator stack
+						while (~(operatorStack.isEmpty())) {
+							do postfix.enqueue(operatorStack.pop());
+						}
+						do postfix.print();
+						do Output.printString("= ");
+						do Output.printInt(calc()); // calculate the postfix expression
+					}
+				}
+			}
+		}
+		return;
+	}
+
+	/**
+	 * get precedence for operator.
+	 * + and - -> precedence 1
+	 * * and / -> precedence 2
+	 */
+	method int getPrecedence(String operator) {
+		var int prec;
+		let prec = 1;
+		if ((operator.charAt(0) = 47) | (operator.charAt(0) = 42)) {
+			let prec = 2;
+		}
+		return prec;
+	}
+
+	/**
+	 * This method implements the shunting yard algorithm.
+	 */
+	method int shunting(char currentChar, int index, String input) {
+		var String currentCharString, numberString, topmostOperator;
+		var boolean found;
+		var int numberStringIndex, currentOperatorPrecedence, topmostOperatorPrecedence;
+		let found = false;
+		let currentCharString = String.new(1);
+        do currentCharString.appendChar(currentChar);
+		let currentOperatorPrecedence = getPrecedence(currentCharString);
+		if (currentChar = 40) { // (
+			let found = true;
+			do operatorStack.push(currentCharString);
+		}
+		if (~found & (currentChar = 41)) { // )
+			let found = true;
+			// now add all operators to the queue till we found the opening parentensis (or the stack is empty...)
+			if (~operatorStack.isEmpty()) {
+				let topmostOperator = operatorStack.pop();
+				while ((~(topmostOperator = null)) & (~(topmostOperator.charAt(0) = 40))) {
+					do postfix.enqueue(topmostOperator);
+					if (~operatorStack.isEmpty()) {
+						let topmostOperator = operatorStack.pop();
+					}
+					else {
+						let topmostOperator = null;
+					}
+				}
+				if (topmostOperator = null) {
+					do Output.printString("Invalid expression!");
+					do Output.println();
+				}	
+			}
+			else {
+				do Output.printString("Invalid expression!");
+				do Output.println();
+			}
+		}
+		if (~found & ((currentChar = 42) | (currentChar = 47))) { // * or /
+			do operatorStack.push(currentCharString);
+			let found = true;
+		}
+		if (~found & ((currentChar = 43) | (currentChar = 45))) { // + or -
+			if (~operatorStack.isEmpty()) {
+				let topmostOperator = operatorStack.pop();
+				let topmostOperatorPrecedence = getPrecedence(topmostOperator);
+				while (topmostOperatorPrecedence > currentOperatorPrecedence) {
+					do postfix.enqueue(topmostOperator);
+					if (~operatorStack.isEmpty()) {
+						let topmostOperator = operatorStack.pop();
+                        let topmostOperatorPrecedence = getPrecedence(topmostOperator);
+					}
+					else {
+						let topmostOperator = null;
+						let topmostOperatorPrecedence = 0;
+					}
+				}
+				if (~(topmostOperator = null)) {
+					do operatorStack.push(topmostOperator);
+				}
+			}
+			do operatorStack.push(currentCharString);
+			let found = true;
+		}
+		if (~found & ((currentChar > 47) & (currentChar < 58))) { // handle number (=operand)
+			let numberString = String.new(5);
+			do numberString.appendChar(currentChar);
+			let numberStringIndex = index;
+			if (numberStringIndex + 1 < input.length()) {
+				let currentChar = input.charAt(numberStringIndex + 1);
+				while ((currentChar > 47) & (currentChar < 58)) {
+					do numberString.appendChar(currentChar);
+						let numberStringIndex = numberStringIndex + 1;
+						if (numberStringIndex + 1 < input.length()) {
+							let currentChar = input.charAt(numberStringIndex + 1);
+						}
+						else {
+							let currentChar = 65;
+						}
+				}
+				let index = numberStringIndex;
+			}
+			do postfix.enqueue(numberString);
+			let found = true;
+		}
+		if (~found) {
+			do Output.printString("Invalid character found!");
+			let index = -1; // return -1 to signal something went wrong
+		}
+		return index;
+	}
+
+	/**
+	 * This method finally calculates and returns the value of the generated postfix expression
+	 * The algorithm is really simple:
+	 * while the queue is not is empty:
+	 *	Dequeue the first element from the stack
+	 *	is this element a number => push it onto calcStack
+	 *	element is an operator => pop the top two elements from the stack, apply the operator and push the result back onto the stack
+	 * return the top element from the stack as result
+	 */
+	method int calc() {
+		var String postfixValue;
+		var int retValue, operand1, operand2;
+		var char firstChar;
+		let retValue = 0;
+		let postfixValue = postfix.dequeue();
+		while (~(postfixValue = null)) {
+			let firstChar = postfixValue.charAt(0);
+			if ((firstChar > 47) & (firstChar < 58)) { // number
+				do calcStack.push(postfixValue.intValue());
+			}
+			else { // operator
+				let operand2 = calcStack.pop();
+				let operand1 = calcStack.pop();
+				if (firstChar = 43) { // +
+					do calcStack.push(operand1 + operand2);
+				}
+				if (firstChar = 45) { // -
+					do calcStack.push(operand1 - operand2);
+				}
+				if (firstChar = 42) { // *
+					do calcStack.push(operand1 * operand2);
+				}
+				if (firstChar = 47) { // /
+					do calcStack.push(operand1 / operand2);
+				}
+			}
+			let postfixValue = postfix.dequeue();
+		}
+		let retValue = calcStack.pop();
+		return retValue;
+	}
+}

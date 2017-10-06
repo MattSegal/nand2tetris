@@ -1,0 +1,49 @@
+class BoardTile {
+    field int _x;
+    field int _y;
+    field int _type;
+    field boolean _is_selected;
+
+    constructor BoardTile new(int x, int y, int type) {
+        let _x = x;
+        let _y = y;
+        let _type = type;
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int getX() { return _x; }
+    method int getY() { return _y; }
+    method int getType() { return _type; }
+    method boolean isSelected() { return _is_selected; }
+
+    method void select() {
+        let _is_selected = true;
+        return;
+    }
+    method void disselect() {
+        let _is_selected = false;
+        return;
+    }
+
+    method boolean isMarbledTile() {
+        return _type = TileType.MarbledTile();
+    }
+
+    method boolena isEmptyTile() {
+        return _type = TileType.EmptyTile();
+    }
+
+    method void toggleType() {
+        if(_type = TileType.EmptyTile()) {
+            let _type = TileType.MarbledTile();
+        } else {
+            let _type = TileType.EmptyTile();
+        }
+        return;
+    }
+}

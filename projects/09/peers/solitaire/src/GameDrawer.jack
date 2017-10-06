@@ -1,0 +1,349 @@
+class GameDrawer {
+    field Board _board;
+    field Cursor _cursor;
+
+    static int _BOARD_X_PADDING;
+    static int _BOARD_Y_PADDING; 
+    static int _TILE_X_OFFSET;
+    static int _TILE_Y_OFFSET;
+    static int _CURSOR_DRAW_COUNTER;
+    static boolean _CURSOR_VISIBLE;
+
+    constructor GameDrawer new(Board board, Cursor cursor) {
+        let _BOARD_X_PADDING = 16;
+        let _BOARD_Y_PADDING = 3;
+        let _TILE_X_OFFSET = 32;
+        let _TILE_Y_OFFSET = 16;
+        let _CURSOR_DRAW_COUNTER = 0;
+        let _CURSOR_VISIBLE = true;
+
+        let _board = board;
+        let _cursor = cursor;
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void drawBoard() {
+        var int x, y, boardSize;
+        var BoardTile tile;
+
+        let boardSize = _board.getBoardSize();
+
+        let x= 0;
+        while (x < boardSize) {
+            let y = 0;
+            while (y < boardSize) {
+                let tile = _board.getTileAt(x, y);
+                do drawTile(tile, _BOARD_X_PADDING, _BOARD_Y_PADDING);
+                let y = y+1;
+            }
+            let x=x+1;
+        }
+        return;
+    }
+
+    method void drawTile(BoardTile tile, int x_padding, int y_padding) {
+        if(tile.isSelected()) {
+            if(tile.getType() = TileType.EmptyTile()) {
+                do drawSelectedEmptyTile(tile, x_padding, y_padding);
+            } else {
+                do drawSelectedMarbleTile(tile, x_padding, y_padding);
+            }
+        } else {
+            if(tile.getType() = TileType.EmptyTile()) {
+                do drawEmptyTile(tile, x_padding, y_padding);
+            } else {
+                if(tile.getType() = TileType.BoardTile()) {
+                    do drawInvalidTile(tile, x_padding, y_padding);
+                } else {
+                    do drawMarbleTile(tile, x_padding, y_padding);
+                }
+            }
+        }
+        return;
+    }
+
+    method void drawInvalidTile(BoardTile tile, int x_padding, int y_padding) {
+        var int memAddress;
+        var int pos;
+        var int padded_x, padded_y;
+
+        let padded_x = tile.getX() + x_padding;
+        let padded_y = tile.getY() + y_padding;
+        let pos = padded_y * _TILE_Y_OFFSET * _TILE_X_OFFSET + padded_x;
+        let memAddress = 16384+pos;
+
+        do Memory.poke(memAddress+0, 16380);
+        do Memory.poke(memAddress+32, 16386);
+        do Memory.poke(memAddress+64, -32767);
+        do Memory.poke(memAddress+96, -32767);
+        do Memory.poke(memAddress+128, -32767);
+        do Memory.poke(memAddress+160, -32767);
+        do Memory.poke(memAddress+192, -32767);
+        do Memory.poke(memAddress+224, -32767);
+        do Memory.poke(memAddress+256, -32767);
+        do Memory.poke(memAddress+288, -32767);
+        do Memory.poke(memAddress+320, -32767);
+        do Memory.poke(memAddress+352, -32767);
+        do Memory.poke(memAddress+384, -32767);
+        do Memory.poke(memAddress+416, -32767);
+        do Memory.poke(memAddress+448, 16386);
+        do Memory.poke(memAddress+480, 16380);
+        return;
+    }
+
+    method void drawEmptyTile(BoardTile tile, int x_padding, int y_padding) {
+        var int memAddress;
+        var int pos;
+        var int padded_x, padded_y;
+
+        let padded_x = tile.getX() + x_padding;
+        let padded_y = tile.getY() + y_padding;
+        let pos = padded_y * _TILE_Y_OFFSET * _TILE_X_OFFSET + padded_x;
+        let memAddress = 16384+pos;
+
+        do Memory.poke(memAddress+0, 16380);
+        do Memory.poke(memAddress+32, 16386);
+        do Memory.poke(memAddress+64, -24583);
+        do Memory.poke(memAddress+96, -24583);
+        do Memory.poke(memAddress+128, -28647);
+        do Memory.poke(memAddress+160, -28647);
+        do Memory.poke(memAddress+192, -28647);
+        do Memory.poke(memAddress+224, -28647);
+        do Memory.poke(memAddress+256, -28647);
+        do Memory.poke(memAddress+288, -28647);
+        do Memory.poke(memAddress+320, -28647);
+        do Memory.poke(memAddress+352, -28647);
+        do Memory.poke(memAddress+384, -28647);
+        do Memory.poke(memAddress+416, -24583);
+        do Memory.poke(memAddress+448, 16386);
+        do Memory.poke(memAddress+480, 16380);
+        return;
+    }
+
+    method void drawSelectedEmptyTile(BoardTile tile, int x_padding, int y_padding) {
+        var int memAddress;
+        var int pos;
+        var int padded_x, padded_y;
+
+        let padded_x = tile.getX() + x_padding;
+        let padded_y = tile.getY() + y_padding;
+        let pos = padded_y * _TILE_Y_OFFSET * _TILE_X_OFFSET + padded_x;
+        let memAddress = 16384+pos;
+
+        do Memory.poke(memAddress+0, -385);
+        do Memory.poke(memAddress+32, -32191);
+        do Memory.poke(memAddress+64, -32383);
+        do Memory.poke(memAddress+96, -32767);
+        do Memory.poke(memAddress+128, -32767);
+        do Memory.poke(memAddress+160, -32767);
+        do Memory.poke(memAddress+192, -16381);
+        do Memory.poke(memAddress+224, 8196);
+        do Memory.poke(memAddress+256, 8196);
+        do Memory.poke(memAddress+288, -16381);
+        do Memory.poke(memAddress+320, -32767);
+        do Memory.poke(memAddress+352, -32767);
+        do Memory.poke(memAddress+384, -32767);
+        do Memory.poke(memAddress+416, -32383);
+        do Memory.poke(memAddress+448, -32191);
+        do Memory.poke(memAddress+480, -385);
+        return;
+    }
+
+    method void drawMarbleTile(BoardTile tile, int x_padding, int y_padding) {
+        var int memAddress;
+        var int pos;
+        var int padded_x, padded_y;
+
+        let padded_x = tile.getX() + x_padding;
+        let padded_y = tile.getY() + y_padding;
+        let pos = padded_y * _TILE_Y_OFFSET * _TILE_X_OFFSET + padded_x;
+        let memAddress = 16384+pos;
+
+        do Memory.poke(memAddress+0, 16380);
+        do Memory.poke(memAddress+32, 16386);
+        do Memory.poke(memAddress+64, -30751);
+        do Memory.poke(memAddress+96, -28687);
+        do Memory.poke(memAddress+128, -24583);
+        do Memory.poke(memAddress+160, -24583);
+        do Memory.poke(memAddress+192, -24583);
+        do Memory.poke(memAddress+224, -24583);
+        do Memory.poke(memAddress+256, -24583);
+        do Memory.poke(memAddress+288, -24583);
+        do Memory.poke(memAddress+320, -24583);
+        do Memory.poke(memAddress+352, -24583);
+        do Memory.poke(memAddress+384, -28687);
+        do Memory.poke(memAddress+416, -30751);
+        do Memory.poke(memAddress+448, 16386);
+        do Memory.poke(memAddress+480, 16380);
+        return;
+    }
+
+    method void drawSelectedMarbleTile(BoardTile tile, int x_padding, int y_padding) {
+        var int memAddress;
+        var int pos;
+        var int padded_x, padded_y;
+
+        let padded_x = tile.getX() + x_padding;
+        let padded_y = tile.getY() + y_padding;
+        let pos = padded_y * _TILE_Y_OFFSET * _TILE_X_OFFSET + padded_x;
+        let memAddress = 16384+pos;
+
+        do Memory.poke(memAddress+0, -385);
+        do Memory.poke(memAddress+32, -385);
+        do Memory.poke(memAddress+64, -1441);
+        do Memory.poke(memAddress+96, -3697);
+        do Memory.poke(memAddress+128, -8185);
+        do Memory.poke(memAddress+160, -8185);
+        do Memory.poke(memAddress+192, -4081);
+        do Memory.poke(memAddress+224, 2064);
+        do Memory.poke(memAddress+256, 2064);
+        do Memory.poke(memAddress+288, -4081);
+        do Memory.poke(memAddress+320, -8185);
+        do Memory.poke(memAddress+352, -8185);
+        do Memory.poke(memAddress+384, -3697);
+        do Memory.poke(memAddress+416, -1441);
+        do Memory.poke(memAddress+448, -385);
+        do Memory.poke(memAddress+480, -385);
+        return;
+    }
+
+    method void drawCursor() {
+        var BoardTile tile;
+
+        let _CURSOR_DRAW_COUNTER = _CURSOR_DRAW_COUNTER + 1;
+        let tile = _cursor.getSelectedTile();
+
+        if(_CURSOR_DRAW_COUNTER = 1500) {
+            let _CURSOR_DRAW_COUNTER = 0;
+            do toggleCursorVisibility();
+        }
+
+        if(_CURSOR_VISIBLE) {
+            if(tile.getType() = TileType.EmptyTile()) {
+                do drawSelectedEmptyTile(tile, _BOARD_X_PADDING, _BOARD_Y_PADDING);
+            } else {
+                do drawSelectedMarbleTile(tile, _BOARD_X_PADDING, _BOARD_Y_PADDING);
+            }
+        } else {
+            if(tile.getType() = TileType.EmptyTile()) {
+                do drawEmptyTile(tile, _BOARD_X_PADDING, _BOARD_Y_PADDING);
+            } else {
+                do drawMarbleTile(tile, _BOARD_X_PADDING, _BOARD_Y_PADDING);
+            }
+        }
+
+        return;
+    }
+
+    method void toggleCursorVisibility() {
+        if(_CURSOR_VISIBLE) {
+            let _CURSOR_VISIBLE = false;
+        } else {
+            let _CURSOR_VISIBLE = true;
+        }
+        return;
+    }
+
+    method void resetCursor() {
+        let _CURSOR_VISIBLE = true;
+        let _CURSOR_DRAW_COUNTER = 0;
+        return;
+    }
+    
+    method void drawGameOver(int marblesLeft, int marblesRemoved) {
+        do clearBoard();
+        do Output.moveCursor(9,32);
+        do Output.printString("Marbles Left: ");
+        do Output.printInt(marblesLeft);
+        do Output.println();
+        do Output.moveCursor(10,32);
+        do Output.printString("Marbles Removed: ");
+        do Output.printInt(marblesRemoved);
+        do Output.println();
+        do Output.moveCursor(11,36);
+        do Output.printString("Game Over!");
+        return;
+    }
+    
+    method void redrawBoard() {
+        do drawBoard();
+        do resetCursor();
+        return;
+    }
+
+    method void drawBorder() {
+        do Screen.drawRectangle(0,0,511,255);
+        do Screen.setColor(false);
+        do Screen.drawRectangle(5,5,506,250);
+        do Screen.setColor(true);
+
+        do Screen.drawRectangle(160,0,165,255);
+        return;
+    }
+
+    method void drawScoreBoard(int marblesLeft, int marblesRemoved) {
+        do clearScoreBoard();
+        do Output.moveCursor(1,3);
+        do Output.printString("Solitaire Jack");
+        do Output.moveCursor(2,3);
+        do Output.printString("==============");
+        do Output.moveCursor(3,3);
+        do Output.printString("     V1.0     ");
+
+        do Screen.drawRectangle(0,47,160,52);
+        
+        do Output.moveCursor(5,8);
+        do Output.printString("Score");
+        do Output.moveCursor(6,8);
+        do Output.printString("=====");
+        do Output.moveCursor(7,1);
+        do Output.printString("Marbles Left:    ");
+        do Output.printInt(marblesLeft);
+        do Output.moveCursor(8,1);
+        do Output.printString("Marbles Removed: ");
+        do Output.printInt(marblesRemoved);
+
+        do Screen.drawRectangle(0,110,160,115);
+        
+        do Output.moveCursor(11,4);
+        do Output.printString("Instructions");
+        do Output.moveCursor(12,4);
+        do Output.printString("============");
+        do Output.moveCursor(13,1);
+        do Output.printString("Arrow keys:");
+        do Output.moveCursor(14,3);
+        do Output.printString("Moves the cursor.");
+        do Output.moveCursor(16,1);
+        do Output.printString("Enter key:");
+        do Output.moveCursor(17,3);
+        do Output.printString("Select a marble");
+        do Output.moveCursor(18,3);
+        do Output.printString("or move it to");
+        do Output.moveCursor(19,3);
+        do Output.printString("an empty space");
+        do Output.moveCursor(20,3);
+        do Output.printString("over another");
+        do Output.moveCursor(21,3);
+        do Output.printString("marble.");
+        return;
+    }
+
+    method void clearScoreBoard() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(5,5,160,250);
+        do Screen.setColor(true);
+        return;
+    }
+
+    method void clearBoard() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(165,5,506,250);
+        do Screen.setColor(true);
+        return;
+    }
+}

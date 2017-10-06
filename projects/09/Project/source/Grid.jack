@@ -1,0 +1,85 @@
+/*
+The Grid class is program's data model
+for the state of the automata that is being drawn to the screen
+*/
+
+class Grid {
+    field Array grid;
+    field int num_rows, num_cols;
+
+    constructor Grid new(int _num_rows, int _num_cols) {
+        var Array row;
+        var int i, j; 
+        let num_rows = _num_rows;
+        let num_cols = _num_cols;
+
+        // Construct the grid model
+        let grid = Array.new(num_rows);
+        let i = 0;
+        while (i < num_rows) {
+            let row = Array.new(num_cols);
+            let j = 0;
+            while (j < num_cols) {
+                let row[j] = 0;
+                let j = j + 1;
+            }
+            let grid[i] = row;
+            let i = i + 1;
+         }
+
+        // Seed first value in the 0th row
+        let j = num_cols / 2;
+        let row = grid[0];
+        let row[j] = 1;
+        return this;
+    }
+
+    method Array get_row(int i) {
+        return grid[i];
+    }
+
+    // Calculates the next row according to the automata's rules
+    method void calculate_row(int i) {
+        var Array prev_row, row;
+        var boolean is_top_edge, is_bot_edge, any_match;
+        var int j;
+        if (i > 0) {
+            let prev_row = grid[i-1];
+            let row = grid[i];
+            let j = 0;
+            while (j < num_cols) {
+                // Handle edge cases
+                let is_top_edge = (j = 0);
+                let is_bot_edge = (j = (num_cols - 1));
+                if (~(is_top_edge | is_bot_edge)) {
+                    // Check automata logic for a match
+                    let any_match = Grid.check_rules(prev_row, j);
+                    if (any_match) {
+                        let row[j] = 1;
+                    }
+                }
+                let j = j + 1;
+            }
+        }
+        return;
+    }
+
+    // Check to see if an index of the new row matches any of the automata's rules
+    function boolean check_rules(Array prev_row, int idx) {
+        var boolean rule1, rule2, rule3, rule4;
+        // Rule 1 - previous row matches 100
+        let rule1 = (prev_row[idx-1] = 1) & (prev_row[idx] = 0) & (prev_row[idx+1] = 0);
+        // Rule 2 - previous row matches 010
+        let rule2 = (prev_row[idx-1] = 0) & (prev_row[idx] = 1) & (prev_row[idx+1] = 0);
+        // Rule 3 - previous row matches 001
+        let rule3 = (prev_row[idx-1] = 0) & (prev_row[idx] = 0) & (prev_row[idx+1] = 1);
+        // Rule 4 - previous row matches 110
+        let rule4 = (prev_row[idx-1] = 1) & (prev_row[idx] = 1) & (prev_row[idx+1] = 0);
+        return rule1 | rule2 | rule3 | rule4;
+    }
+
+    method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+}

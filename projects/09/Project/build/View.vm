@@ -1,0 +1,80 @@
+function View.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+call Screen.clearScreen 0
+pop temp 0
+push pointer 0
+return
+function View.render_row 6
+push argument 0
+pop pointer 0
+push argument 1
+push argument 2
+call Grid.get_row 2
+pop local 0
+push constant 0
+pop local 1
+label WHILE_EXP0
+push local 1
+push this 0
+lt
+not
+if-goto WHILE_END0
+push local 1
+push local 0
+add
+pop pointer 1
+push that 0
+push constant 1
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 1
+push this 1
+call Math.multiply 2
+pop local 2
+push argument 2
+push this 1
+call Math.multiply 2
+pop local 4
+push local 1
+push constant 1
+add
+push this 1
+call Math.multiply 2
+pop local 3
+push argument 2
+push constant 1
+add
+push this 1
+call Math.multiply 2
+pop local 5
+push local 2
+push local 4
+push local 3
+push local 5
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE0
+push local 1
+push constant 1
+add
+pop local 1
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return
+function View.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return

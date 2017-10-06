@@ -1,0 +1,181 @@
+class SolitaireGame {
+    field boolean gameOver;
+
+    field BoardTile from;
+    field BoardTile to;
+    field boolean isFromSelected;
+
+    field Board gameBoard;
+    field Cursor gameCursor;
+    field GameDrawer gameDrawer;
+
+    /** Constructs a new Solitaire Game. */
+    constructor SolitaireGame new() {
+        let gameBoard = Board.new();
+        let gameCursor = Cursor.new(gameBoard.getCenterTile());
+        let gameDrawer = GameDrawer.new(gameBoard, gameCursor);
+
+        let gameOver = false;
+        let isFromSelected = false;
+
+        return this;
+    }
+
+    /** Disposes this game. */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void run() {
+        var char key;  // the key currently pressed by the user
+        var boolean exit;
+
+        let exit = false;  
+
+        do gameDrawer.drawBorder();
+        do gameDrawer.drawScoreBoard(gameBoard.getMarblesLeft(), gameBoard.getMarblesRemoved());
+        do gameDrawer.drawBoard();
+
+        while (~exit) {
+            // waits for a key to be pressed
+            while (key = 0) {
+                let key = Keyboard.keyPressed();
+                do gameDrawer.drawCursor();
+            }
+
+            if (key = 81)  { let exit = true; }     // q key
+            if (key = 131) { do moveUp(); }   // up arrow
+            if (key = 133) { do moveDown(); }   // down arrow
+            if (key = 130) { do moveLeft(); }   // left arrow
+            if (key = 132) { do moveRight(); }   // right arrow
+            if (key = 128) { do selectTile(); } // enter key
+
+            if(isGameOver() = true) {
+                do gameDrawer.drawGameOver(gameBoard.getMarblesLeft(), gameBoard.getMarblesRemoved());
+                return;
+            }
+
+            // waits for the key to be released
+            while (~(key = 0)) {
+                let key = Keyboard.keyPressed();
+                do gameDrawer.drawCursor();
+            }
+        } // while
+
+        do gameDrawer.drawGameOver(gameBoard.getMarblesLeft(), gameBoard.getMarblesRemoved());
+        return;
+    }
+
+    method boolean isGameOver() {
+        return ~gameBoard.hasMoreMoves();
+    }
+
+    method void moveLeft() {
+        var int new_x, new_y;
+        var BoardTile currTile;
+
+        let currTile = gameCursor.getSelectedTile();
+        let new_x = currTile.getX() - 1;
+        let new_y = currTile.getY();
+
+        if (gameBoard.isValidPosition(new_x, new_y)) {
+            do moveCursorTo(new_x, new_y);
+        }
+
+        return;
+    }
+
+    method void moveRight() {
+        var int new_x, new_y;
+        var BoardTile currTile;
+
+        let currTile = gameCursor.getSelectedTile();
+
+        let new_x = currTile.getX() + 1;
+        let new_y = currTile.getY();
+
+        if (gameBoard.isValidPosition(new_x, new_y)) {
+            do moveCursorTo(new_x, new_y);
+        }
+
+        return;
+    }
+
+    method void moveUp() {
+        var int new_x, new_y;
+        var BoardTile currTile;
+
+        let currTile = gameCursor.getSelectedTile();
+
+        let new_x = currTile.getX();
+        let new_y = currTile.getY() - 1;
+
+        if (gameBoard.isValidPosition(new_x, new_y)) {
+            do moveCursorTo(new_x, new_y);
+        }
+
+        return;
+    }
+
+    method void moveDown() {
+        var int new_x, new_y;
+        var BoardTile currTile;
+
+        let currTile = gameCursor.getSelectedTile();
+
+        let new_x = currTile.getX();
+        let new_y = currTile.getY() + 1;
+
+        if (gameBoard.isValidPosition(new_x, new_y)) {
+            do moveCursorTo(new_x, new_y);
+        }
+
+        return;
+    }
+
+    method void moveCursorTo(int x, int y) {
+        do gameCursor.moveTo(gameBoard.getTileAt(x, y));
+        do gameDrawer.redrawBoard();
+        return;
+    }
+
+    method void selectTile() {
+        var BoardTile tile;
+        let tile = gameCursor.getSelectedTile();
+
+        if(isFromSelected) {
+            if(tile = from) {
+                do tile.disselect();
+                let isFromSelected = false;
+                let from = null;
+            } else {
+                let to = tile;
+                do makeMove();
+            }
+        } else {
+            if(tile.isMarbledTile()) {
+                let from = tile;
+                do  from.select();
+                let isFromSelected = true;
+            }
+        }
+
+        return;
+    }
+
+    method void makeMove() {
+        if(gameBoard.isValidMove(from, to)) {
+            do gameBoard.makeMove(from, to);
+            do from.disselect();
+            let from = null;
+            let to = null;
+            let isFromSelected = false;
+        }
+        do gameDrawer.redrawBoard();
+        do gameDrawer.drawScoreBoard(gameBoard.getMarblesLeft(), gameBoard.getMarblesRemoved());
+        return;
+    }
+
+
+}

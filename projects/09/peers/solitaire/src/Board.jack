@@ -1,0 +1,218 @@
+class Board {
+    field int marblesLeft;
+    field int marblesRemoved;
+
+    field Array _boardMap;
+
+    static int _BOARD_SIZE;
+    static int _BOARD_CENTER_X;
+    static int _BOARD_CENTER_Y;
+
+    constructor Board new() {
+        let _BOARD_SIZE = 9;
+        let _BOARD_CENTER_X = 4;
+        let _BOARD_CENTER_Y = 4;
+
+        let _boardMap = initializeBoard();
+
+        let marblesRemoved = 0;
+
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method Array initializeBoard() {
+        var Array board;
+        var int x_pos;
+        var int y_pos;
+        var int pos;
+        var BoardTile currTile;
+
+        let board = Array.new(_BOARD_SIZE * _BOARD_SIZE);
+        let marblesLeft = 0;
+        let x_pos = 0;
+        let y_pos = 0;
+        while(x_pos < _BOARD_SIZE) {
+            let y_pos = 0;
+            while(y_pos < _BOARD_SIZE) {
+                let pos = x_pos * _BOARD_SIZE + y_pos; //convert multidemensional x,y to single array pos.
+                if(~isValidPosition(x_pos, y_pos)) {
+                    let currTile = BoardTile.new(x_pos, y_pos, TileType.BoardTile());
+                    let board[pos] = currTile;
+                } else {
+                    if (isCenterPosition(x_pos, y_pos)) { 
+                        let currTile = BoardTile.new(x_pos, y_pos, TileType.EmptyTile());
+                        let board[pos] = currTile;
+                    } 
+                    else { 
+                        let currTile = BoardTile.new(x_pos, y_pos, TileType.MarbledTile());
+                        let board[pos] = currTile; 
+                        let marblesLeft = marblesLeft + 1;
+                    } 
+                }
+                let y_pos = y_pos+1;
+            }        
+            let x_pos = x_pos+1;
+        }
+        return board;
+    }
+
+    method boolean isValidPosition(int x, int y) {
+        if ((x<0) | (x>8) | (y<0) | (y>8)) { return false; }
+        if ((y<3) & ((x<3) | (x>5))) { return false; }
+        if ((y>5) & ((x<3) | (x>5))) { return false; }
+        return true;
+    }
+
+    method boolean isCenterPosition(int x, int y) {
+        if ((y = _BOARD_CENTER_Y) & (x = _BOARD_CENTER_X)) { return true; }
+        return false;
+    }
+
+    method boolean getCenterTile() {
+        return getTileAt(_BOARD_CENTER_X, _BOARD_CENTER_Y);
+    }
+
+    method int getBoardSize() {
+        return _BOARD_SIZE;
+    }
+
+    method BoardTile getTileAt(int x, int y) {
+        var int pos;
+        let pos = x * _BOARD_SIZE + y;
+        return _boardMap[pos];
+    }
+
+    method int getMarblesLeft() {
+        return marblesLeft;
+    }
+
+    method int getMarblesRemoved() {
+        return marblesRemoved;
+    }
+
+    method boolean isValidMove(BoardTile from, BoardTile to) {
+        var BoardTile middleTile;
+
+        if(~from.isMarbledTile()) { return false; }
+        if(~to.isEmptyTile()) { return false; }
+
+        if(from.getX() = to.getX()) {
+            if(from.getY() - to.getY() = 2) {
+                let middleTile = getTileAt(from.getX(), from.getY() -1);
+                if(middleTile.isMarbledTile()) {
+                    return true;
+                }
+            }
+            if(from.getY() - to.getY() = -2) {
+                let middleTile = getTileAt(from.getX(), from.getY() +1);
+                if(middleTile.isMarbledTile()) {
+                    return true;
+                }
+            }
+        }
+
+        if(from.getY() = to.getY()) {
+            if(from.getX() - to.getX() = 2) {
+                let middleTile = getTileAt(from.getX() - 1, from.getY());
+                if(middleTile.isMarbledTile()) {
+                    return true;
+                }
+            }
+            if(from.getX() - to.getX() = -2) {
+                let middleTile = getTileAt(from.getX() + 1, from.getY() );
+                if(middleTile.isMarbledTile()) {
+                    return true;
+                }
+            } 
+        }
+        return false;
+    }
+
+    method void makeMove(BoardTile from, BoardTile to) {
+        var BoardTile middleTile;
+        let middleTile = getMiddleTile(from, to);
+
+        do from.toggleType();
+        do to.toggleType();
+        do middleTile.toggleType();
+        
+        let marblesLeft = marblesLeft - 1;
+        let marblesRemoved = marblesRemoved + 1;
+
+        return; 
+    }
+
+    method BoardTile getMiddleTile(BoardTile from, BoardTile to) {
+        var BoardTile middleTile;
+
+        if(from.getX() = to.getX()) {
+            if(from.getY() - to.getY() = 2) {
+                let middleTile = getTileAt(from.getX(), from.getY() -1);
+                return middleTile;
+            }
+            if(from.getY() - to.getY() = -2) {
+                let middleTile = getTileAt(from.getX(), from.getY() +1);
+                return middleTile;
+            }
+        }
+
+        if(from.getY() = to.getY()) {
+            if(from.getX() - to.getX() = 2) {
+                let middleTile = getTileAt(from.getX() - 1, from.getY());
+                return middleTile;
+            }
+            if(from.getX() - to.getX() = -2) {
+                let middleTile = getTileAt(from.getX() + 1, from.getY() );
+                return middleTile;
+            } 
+        }
+        return null;
+    }
+
+    method boolean hasMoreMoves() {
+        var int x,y;
+        var BoardTile currTile, possibleDest;
+
+        let x=0;
+        while (x < _BOARD_SIZE) {
+            let y=0;
+            while(y < _BOARD_SIZE) {
+                let currTile = getTileAt(x,y);
+                if(currTile.isMarbledTile()) {
+                    if(x - 2 > -1) {
+                        let possibleDest = getTileAt(x-2, y);
+                        if(isValidMove(currTile, possibleDest)) {
+                            return true;
+                        }
+                    }
+                    if(x + 2 < 9) {
+                        let possibleDest = getTileAt(x+2, y);
+                        if(isValidMove(currTile, possibleDest)) {
+                            return true;
+                        }
+                    }
+                    if(y - 2 > -1) {
+                        let possibleDest = getTileAt(x, y-2);
+                        if(isValidMove(currTile, possibleDest)) {
+                            return true;
+                        }
+                    }
+                    if(y + 2 < 9) {
+                        let possibleDest = getTileAt(x, y+2);
+                        if(isValidMove(currTile, possibleDest)) {
+                            return true;
+                        }
+                    }
+                }
+                let y = y+1;
+            }
+            let x = x+1;
+        }
+        return false;
+    }
+}

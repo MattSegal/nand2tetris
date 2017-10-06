@@ -1,0 +1,61 @@
+/**
+ * This class implements a stack-adt based on integer-values
+ */
+class IntStack {
+
+	field IntList list; // the list which forms the basis of the stack
+
+	/**
+	 * Constructor (Simply sets the list to null)
+	 */
+	constructor IntStack new() {
+		let list = null; 
+		return this;
+	}
+
+	/**
+	 * Push a new value onto the stack
+	 */
+	method void push(int val) {
+		let list = List.new(val, list);
+		return;
+	}
+
+	/**
+	 * Pop a value from the stack and return it. Returns 0 if the stack is empty
+	 */
+	method int pop() {
+		var int retValue;
+		let retValue = 0;
+		if (~(list = null)) {
+			let retValue = list.getData();
+			let list = list.getNext();
+		}
+		return retValue;
+	}
+
+    /**
+	 * Print the stack to stdout
+	 */
+	method void print() {
+		do list.print();
+		return;
+	}
+
+	/** 
+	 * Disposes this Stack by recursively disposing its tail.
+	 */
+	method void dispose() {
+		do list.dispose();
+		// Uses an OS routine to recycle this object.
+		do Memory.deAlloc(this);
+		return;
+	}
+
+	/**
+	 * Method to check if the stack is empty
+	 */
+	method boolean isEmpty() {
+		return (list = null);
+	}
+}

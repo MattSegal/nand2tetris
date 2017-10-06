@@ -1,0 +1,53 @@
+function Main.main 8
+push constant 256
+pop local 2
+push constant 512
+pop local 3
+push constant 4
+pop local 4
+push local 2
+push local 4
+call Math.divide 2
+pop local 5
+push local 3
+push local 4
+call Math.divide 2
+pop local 6
+push local 5
+push local 6
+call Grid.new 2
+pop local 1
+push local 6
+push local 4
+call View.new 2
+pop local 0
+push constant 0
+pop local 7
+label WHILE_EXP0
+push local 7
+push local 5
+push constant 1
+sub
+lt
+not
+if-goto WHILE_END0
+push local 1
+push local 7
+call Grid.calculate_row 2
+pop temp 0
+push local 0
+push local 1
+push local 7
+call View.render_row 3
+pop temp 0
+push local 7
+push constant 1
+add
+pop local 7
+push constant 50
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 0
+return

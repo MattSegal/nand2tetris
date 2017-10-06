@@ -1,0 +1,38 @@
+/*
+Calculates each row of the automata, progressively rendering it to the screen.
+See README for more details
+*/
+
+class Main {
+    function void main() {
+        var View view;
+        var Grid grid;
+        var int height, width, size, num_rows, num_cols, idx;
+
+        // Calculate the grid dimensions
+        let height      = 256;  // pixels
+        let width       = 512;  // pixels
+        let size        = 4;    // pixels
+        let num_rows    = height / size;
+        let num_cols    = width / size;
+
+        // Data model
+        let grid = Grid.new(num_rows, num_cols);
+
+        // View layer
+        let view = View.new(num_cols, size);
+
+        // Loop over each row
+        let idx = 0;
+        while (idx < (num_rows - 1)) {
+            // Caculate the values for the next row
+            do grid.calculate_row(idx);
+
+            // Render the row's values to the screen
+            do view.render_row(grid, idx);
+            let idx = idx + 1;            
+            do Sys.wait(50);
+        }
+        return;
+    }
+}

@@ -1,0 +1,8 @@
+*(-30) 
+    The chip failed to pass our tests (code = diff_with_test_prog_Rect)
+    Rect.hack: 
+        Comparison failure in line 6: 0100000000000000 0000010001010111
+*(-40) 
+    The chip failed to pass our tests (code = diff_with_test_prog_Pong)
+    Pong.hack: 
+        Comparison failure in line 2: 0000000000000000 0000000000010000

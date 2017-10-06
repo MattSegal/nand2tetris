@@ -1,0 +1,68 @@
+/**
+ * This class implements a queue data structure holding strings (FIFO)
+ */
+class StringQueue {
+
+	field List list; // the underlying list of the queue
+
+	/**
+	 * Constructor just initializes the the list with null
+	 */
+	constructor StringQueue new() {
+		let list = null;
+		return this;
+	}
+
+	/**
+	 * Method for enqueuing a value
+	 */
+	method void enqueue(String val) {
+		var List it;
+		if (list = null) {
+			let list = List.new(val, null);
+		}
+		else {
+			let it = list;
+			while (~(it.getNext() = null)) {
+				let it = it.getNext();
+			}
+			do it.append(List.new(val, null));
+		}
+		return;
+	}
+
+	/**
+	 * Method for dequeuing a value
+	 */
+	method String dequeue() {
+		var String retValue;
+		let retValue = null;
+		if (~(list = null)) {
+			let retValue = list.getData();
+			let list = list.getNext();
+		}
+		return retValue;
+	}
+
+	/**
+	 * Method to print this queue
+	 */
+	method void print() {
+		do list.print();
+		return;
+	}
+	
+	/** 
+	 * Disposes this object. 
+	 */
+	method void dispose() {
+		do list.dispose();
+		// Uses an OS routine to recycle this object.
+		do Memory.deAlloc(this);
+		return;
+	}
+
+	method boolean isEmpty() {
+		return (list = null);
+	} 
+}

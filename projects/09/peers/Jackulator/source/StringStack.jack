@@ -1,0 +1,41 @@
+class StringStack {
+
+	field List list;
+
+	constructor StringStack new() {
+		let list = null;
+		return this;
+	}
+
+	method void push(String val) {
+		let list = List.new(val, list);
+		return;
+	}
+
+	method String pop() {
+		var String retValue;
+		let retValue = null;
+		if (~(list = null)) {
+			let retValue = list.getData();
+			let list = list.getNext();
+		}
+		return retValue;
+	}
+
+	method void print() {
+		do list.print();
+		return;
+	}
+
+	/** Disposes this List by recursively disposing its tail. */
+	method void dispose() {
+		do list.dispose();
+		// Uses an OS routine to recycle this object.
+		do Memory.deAlloc(this);
+		return;
+	}
+
+	method boolean isEmpty() {
+		return (list = null);
+	}
+}

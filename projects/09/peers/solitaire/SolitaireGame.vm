@@ -1,0 +1,392 @@
+function SolitaireGame.new 0
+push constant 7
+call Memory.alloc 1
+pop pointer 0
+call Board.new 0
+pop this 4
+push this 4
+call Board.getCenterTile 1
+call Cursor.new 1
+pop this 5
+push this 4
+push this 5
+call GameDrawer.new 2
+pop this 6
+push constant 0
+pop this 0
+push constant 0
+pop this 3
+push pointer 0
+return
+function SolitaireGame.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function SolitaireGame.run 2
+push argument 0
+pop pointer 0
+push constant 0
+pop local 1
+push this 6
+call GameDrawer.drawBorder 1
+pop temp 0
+push this 6
+push this 4
+call Board.getMarblesLeft 1
+push this 4
+call Board.getMarblesRemoved 1
+call GameDrawer.drawScoreBoard 3
+pop temp 0
+push this 6
+call GameDrawer.drawBoard 1
+pop temp 0
+label WHILE_EXP0
+push local 1
+not
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+push constant 0
+eq
+not
+if-goto WHILE_END1
+call Keyboard.keyPressed 0
+pop local 0
+push this 6
+call GameDrawer.drawCursor 1
+pop temp 0
+goto WHILE_EXP1
+label WHILE_END1
+push local 0
+push constant 81
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+not
+pop local 1
+label IF_FALSE0
+push local 0
+push constant 131
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push pointer 0
+call SolitaireGame.moveUp 1
+pop temp 0
+label IF_FALSE1
+push local 0
+push constant 133
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push pointer 0
+call SolitaireGame.moveDown 1
+pop temp 0
+label IF_FALSE2
+push local 0
+push constant 130
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push pointer 0
+call SolitaireGame.moveLeft 1
+pop temp 0
+label IF_FALSE3
+push local 0
+push constant 132
+eq
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push pointer 0
+call SolitaireGame.moveRight 1
+pop temp 0
+label IF_FALSE4
+push local 0
+push constant 128
+eq
+if-goto IF_TRUE5
+goto IF_FALSE5
+label IF_TRUE5
+push pointer 0
+call SolitaireGame.selectTile 1
+pop temp 0
+label IF_FALSE5
+push pointer 0
+call SolitaireGame.isGameOver 1
+push constant 0
+not
+eq
+if-goto IF_TRUE6
+goto IF_FALSE6
+label IF_TRUE6
+push this 6
+push this 4
+call Board.getMarblesLeft 1
+push this 4
+call Board.getMarblesRemoved 1
+call GameDrawer.drawGameOver 3
+pop temp 0
+push constant 0
+return
+label IF_FALSE6
+label WHILE_EXP2
+push local 0
+push constant 0
+eq
+not
+not
+if-goto WHILE_END2
+call Keyboard.keyPressed 0
+pop local 0
+push this 6
+call GameDrawer.drawCursor 1
+pop temp 0
+goto WHILE_EXP2
+label WHILE_END2
+goto WHILE_EXP0
+label WHILE_END0
+push this 6
+push this 4
+call Board.getMarblesLeft 1
+push this 4
+call Board.getMarblesRemoved 1
+call GameDrawer.drawGameOver 3
+pop temp 0
+push constant 0
+return
+function SolitaireGame.isGameOver 0
+push argument 0
+pop pointer 0
+push this 4
+call Board.hasMoreMoves 1
+not
+return
+function SolitaireGame.moveLeft 3
+push argument 0
+pop pointer 0
+push this 5
+call Cursor.getSelectedTile 1
+pop local 2
+push local 2
+call BoardTile.getX 1
+push constant 1
+sub
+pop local 0
+push local 2
+call BoardTile.getY 1
+pop local 1
+push this 4
+push local 0
+push local 1
+call Board.isValidPosition 3
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+push local 0
+push local 1
+call SolitaireGame.moveCursorTo 3
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function SolitaireGame.moveRight 3
+push argument 0
+pop pointer 0
+push this 5
+call Cursor.getSelectedTile 1
+pop local 2
+push local 2
+call BoardTile.getX 1
+push constant 1
+add
+pop local 0
+push local 2
+call BoardTile.getY 1
+pop local 1
+push this 4
+push local 0
+push local 1
+call Board.isValidPosition 3
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+push local 0
+push local 1
+call SolitaireGame.moveCursorTo 3
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function SolitaireGame.moveUp 3
+push argument 0
+pop pointer 0
+push this 5
+call Cursor.getSelectedTile 1
+pop local 2
+push local 2
+call BoardTile.getX 1
+pop local 0
+push local 2
+call BoardTile.getY 1
+push constant 1
+sub
+pop local 1
+push this 4
+push local 0
+push local 1
+call Board.isValidPosition 3
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+push local 0
+push local 1
+call SolitaireGame.moveCursorTo 3
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function SolitaireGame.moveDown 3
+push argument 0
+pop pointer 0
+push this 5
+call Cursor.getSelectedTile 1
+pop local 2
+push local 2
+call BoardTile.getX 1
+pop local 0
+push local 2
+call BoardTile.getY 1
+push constant 1
+add
+pop local 1
+push this 4
+push local 0
+push local 1
+call Board.isValidPosition 3
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+push local 0
+push local 1
+call SolitaireGame.moveCursorTo 3
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function SolitaireGame.moveCursorTo 0
+push argument 0
+pop pointer 0
+push this 5
+push this 4
+push argument 1
+push argument 2
+call Board.getTileAt 3
+call Cursor.moveTo 2
+pop temp 0
+push this 6
+call GameDrawer.redrawBoard 1
+pop temp 0
+push constant 0
+return
+function SolitaireGame.selectTile 1
+push argument 0
+pop pointer 0
+push this 5
+call Cursor.getSelectedTile 1
+pop local 0
+push this 3
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push local 0
+push this 1
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 0
+call BoardTile.disselect 1
+pop temp 0
+push constant 0
+pop this 3
+push constant 0
+pop this 1
+goto IF_END1
+label IF_FALSE1
+push local 0
+pop this 2
+push pointer 0
+call SolitaireGame.makeMove 1
+pop temp 0
+label IF_END1
+goto IF_END0
+label IF_FALSE0
+push local 0
+call BoardTile.isMarbledTile 1
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 0
+pop this 1
+push this 1
+call BoardTile.select 1
+pop temp 0
+push constant 0
+not
+pop this 3
+label IF_FALSE2
+label IF_END0
+push constant 0
+return
+function SolitaireGame.makeMove 0
+push argument 0
+pop pointer 0
+push this 4
+push this 1
+push this 2
+call Board.isValidMove 3
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 4
+push this 1
+push this 2
+call Board.makeMove 3
+pop temp 0
+push this 1
+call BoardTile.disselect 1
+pop temp 0
+push constant 0
+pop this 1
+push constant 0
+pop this 2
+push constant 0
+pop this 3
+label IF_FALSE0
+push this 6
+call GameDrawer.redrawBoard 1
+pop temp 0
+push this 6
+push this 4
+call Board.getMarblesLeft 1
+push this 4
+call Board.getMarblesRemoved 1
+call GameDrawer.drawScoreBoard 3
+pop temp 0
+push constant 0
+return

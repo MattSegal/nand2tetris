@@ -1,0 +1,87 @@
+function BoardTile.new 0
+push constant 4
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push argument 2
+pop this 2
+push pointer 0
+return
+function BoardTile.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function BoardTile.getX 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function BoardTile.getY 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function BoardTile.getType 0
+push argument 0
+pop pointer 0
+push this 2
+return
+function BoardTile.isSelected 0
+push argument 0
+pop pointer 0
+push this 3
+return
+function BoardTile.select 0
+push argument 0
+pop pointer 0
+push constant 0
+not
+pop this 3
+push constant 0
+return
+function BoardTile.disselect 0
+push argument 0
+pop pointer 0
+push constant 0
+pop this 3
+push constant 0
+return
+function BoardTile.isMarbledTile 0
+push argument 0
+pop pointer 0
+push this 2
+call TileType.MarbledTile 0
+eq
+return
+function BoardTile.isEmptyTile 0
+push argument 0
+pop pointer 0
+push this 2
+call TileType.EmptyTile 0
+eq
+return
+function BoardTile.toggleType 0
+push argument 0
+pop pointer 0
+push this 2
+call TileType.EmptyTile 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+call TileType.MarbledTile 0
+pop this 2
+goto IF_END0
+label IF_FALSE0
+call TileType.EmptyTile 0
+pop this 2
+label IF_END0
+push constant 0
+return

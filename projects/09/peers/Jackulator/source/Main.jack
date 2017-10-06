@@ -1,0 +1,20 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/09/List/Main.jack
+
+/**
+ * Main class 
+ */
+class Main {
+        
+   /**
+    * Main function
+    */
+   function void main() {
+        var Jackulator jackulator;
+        let jackulator = Jackulator.new();
+        do jackulator.run();
+        return;
+   }
+}

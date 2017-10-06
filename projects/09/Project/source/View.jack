@@ -1,0 +1,38 @@
+/*
+The View class is responsible for rendering
+the grid model to the screen 
+*/
+
+class View {
+    field int num_cols, size;
+
+    constructor View new(int _num_cols, int _size) {
+        let num_cols = _num_cols;
+        let size = _size;
+        do Screen.clearScreen();
+        return this;
+    }
+
+    method void render_row(Grid grid, int i) {
+        var Array row;
+        var int j, x1, x2, y1, y2;
+        let row = grid.get_row(i);
+        let j = 0;
+        while (j < num_cols) {
+            if (row[j] = 1) {
+                let x1 = j * size;
+                let y1 = i * size;
+                let x2 = (j + 1) * size;
+                let y2 = (i + 1) * size;
+                do Screen.drawRectangle(x1, y1, x2, y2);
+            }
+            let j = j + 1;
+        }
+        return;
+    }
+
+    method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+}
