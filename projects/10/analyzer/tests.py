@@ -1,10 +1,17 @@
 from unittest import TestCase
+from mock import patch
 
 from tokenizer import tokenize, Token
-from jack_parser import parse_class
+from jack_parser import Parser
 from constants import KEYWORDS, SYMBOLS
 
 class TestParser(TestCase):
+
+    @staticmethod
+    def _dummy_parse(self):
+        self.idx += 1
+        return Token('dummy', 'dummy')
+
 
     def test_class_no_body(self):
         tokens = (
@@ -20,8 +27,51 @@ class TestParser(TestCase):
                 Token('symbol', '{'),
                 Token('symbol', '}'),
         ])
-        actual, _ =  parse_class(tokens, 0)
 
+        actual = Parser(tokens).parse_class()
+        self.assertEqual(expected, actual)
+
+    @patch('jack_parser.Parser.parse_class_var_declaration', autospec=True)
+    def test_class_with_body(self, mock_parse):
+        tokens = (
+            Token('keyword', 'class'), 
+            Token('identifier', 'Main'), 
+            Token('symbol', '{'),
+            Token('keyword', 'static'),
+            Token('symbol', '}'),
+        )
+
+        expected = Token('class', [
+                Token('keyword', 'class'), 
+                Token('identifier', 'Main'), 
+                Token('dummy', 'dummy'),
+                Token('symbol', '{'),
+                Token('symbol', '}'),
+        ])
+
+        parser = Parser(tokens)
+
+        mock_parse = self._dummy_parse(parser)
+
+        actual = parser.parse_class()
+        self.assertEqual(expected, actual)
+
+    def test_class_no_body(self):
+        tokens = (
+            Token('keyword', 'class'), 
+            Token('identifier', 'Main'), 
+            Token('symbol', '{'),
+            Token('symbol', '}'),
+        )
+
+        expected = Token('class', [
+                Token('keyword', 'class'), 
+                Token('identifier', 'Main'), 
+                Token('symbol', '{'),
+                Token('symbol', '}'),
+        ])
+
+        actual = Parser(tokens).parse_class()
         self.assertEqual(expected, actual)
             
 class TestTokenizer(TestCase):

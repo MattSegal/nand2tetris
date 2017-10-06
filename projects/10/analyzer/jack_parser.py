@@ -31,7 +31,7 @@ UNARY_OPERATIONS = (
 )
 
 class Parser(object):
-    def __init__(tokens):
+    def __init__(self, tokens):
         self.tokens = tokens
         self.idx = 0
 
@@ -39,19 +39,18 @@ class Parser(object):
         return self.parse_class()
 
     def parse_class(self):
-        class_node = Token('class', [])
+        node = Token('class', [])
 
-        self.try_add(class_node, 'keyword', value='class')
-        self.try_add(class_node, 'identifier')
+        self.try_add(node, 'keyword', value='class')
+        self.try_add(node, 'identifier')
 
         while self.is_class_var_declaration():
-            node = self.parse_class_var_declaration()
-            class_node.value.append(node)
+            node.value.append(self.parse_class_var_declaration())
 
-        self.try_add(class_node, 'symbol', value='{')
-        self.try_add(class_node, 'symbol', value='}')
+        self.try_add(node, 'symbol', value='{')
+        self.try_add(node, 'symbol', value='}')
 
-        return class_node
+        return node
 
     def is_class_var_declaration(self):
         return self.token in (
@@ -60,21 +59,10 @@ class Parser(object):
         )
 
     def parse_class_var_declaration(self):
-        dec_node = Token('classVarDec', [])
+        node = Token('classVarDec', [])
 
-        try_add(class_node, tokens[idx], 'keyword', value='static^field')
-        idx += 1
-        
-        node, idx = parse_type(tokens, idx)
-        dec_node.append
-
-
-    def parse_expression(self, token):
-        Token('symbol','}')
-
-
-    def parse_subroutine_call(self, token):
-        pass
+        try_add(node, tokens[idx], 'keyword', value='static^field')
+        node.value.append(self.parse_type())
 
     def parse_op(self, token):
         if token in OPERATIONS:
@@ -94,20 +82,14 @@ class Parser(object):
         else:
             raise ValueError(token, 'is not a valid keyword constant.')
 
-    def try_add(self, node, token, _type, value=None):
-        assert (
-            isinstance(self.token, Token),
-            '{} {} must be a Token'.format(type(self.token), self.token)
-        )
+    def try_add(self, node, _type, value=None):
+        assert isinstance(self.token, Token), '{} {} must be a Token'.format(type(self.token), self.token)
         assert isinstance(node.value, list), 'Node {} must have a list'.format(node)
         assert self.token.type == _type, 'Token {} must be type {}'.format(self.token, _type)
         if value:
-            assert (
-                self.token.value in value.split(OR), 
-                'Token {} must have value {}'.format(self.token, value.split(OR))
-            )
-        self.idx += 1
+            assert self.token.value in value.split(OR), 'Token {} must have value {}'.format(self.token, value.split(OR))
         node.value.append(self.token)
+        self.idx += 1
 
     @property
     def token(self):
