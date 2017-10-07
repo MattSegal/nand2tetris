@@ -1,5 +1,5 @@
 from unittest import TestCase
-from mock import patch
+from mock import Mock, DEFAULT
 
 from tokenizer import tokenize, Token
 from jack_parser import Parser
@@ -8,12 +8,21 @@ from constants import KEYWORDS, SYMBOLS
 class TestParser(TestCase):
 
     @staticmethod
-    def _dummy_parse(self):
-        self.idx += 1
-        return Token('dummy', 'dummy')
+    def _progress_parse(instance):
+        instance.idx += 1
+        return DEFAULT
 
+    @staticmethod
+    def _mock_parse(instance):
+        return Mock(
+            return_value=Token('dummy', 'dummy'),
+            side_effect=lambda: TestParser._progress_parse(instance)
+        )
 
     def test_class_no_body(self):
+        """
+        'class' className '{' classVarDec* subroutineDec* '}' 
+        """
         tokens = (
             Token('keyword', 'class'), 
             Token('identifier', 'Main'), 
@@ -31,48 +40,64 @@ class TestParser(TestCase):
         actual = Parser(tokens).parse_class()
         self.assertEqual(expected, actual)
 
-    @patch('jack_parser.Parser.parse_class_var_declaration', autospec=True)
-    def test_class_with_body(self, mock_parse):
+    def test_class_with_body(self):
+        """
+        'class' className '{' classVarDec* subroutineDec* '}' 
+        """
         tokens = (
             Token('keyword', 'class'), 
             Token('identifier', 'Main'), 
             Token('symbol', '{'),
-            Token('keyword', 'static'),
+            Token('keyword', 'static'),  # Dummy class var declaration
+            Token('keyword', 'function'),  # Dummy subroutine declaration
             Token('symbol', '}'),
         )
 
         expected = Token('class', [
-                Token('keyword', 'class'), 
-                Token('identifier', 'Main'), 
-                Token('dummy', 'dummy'),
-                Token('symbol', '{'),
-                Token('symbol', '}'),
+            Token('keyword', 'class'), 
+            Token('identifier', 'Main'), 
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),
+            Token('dummy', 'dummy'),
+            Token('symbol', '}'),
         ])
 
         parser = Parser(tokens)
-
-        mock_parse = self._dummy_parse(parser)
+        parser.parse_class_var_declaration = self._mock_parse(parser)
+        parser.parse_subroutine_declaration = self._mock_parse(parser)
 
         actual = parser.parse_class()
         self.assertEqual(expected, actual)
 
-    def test_class_no_body(self):
+    def test_class_var_declaration(self):
+        """
+        ('static' | 'field' ) type varName (',' varName)* ';' 
+        """
         tokens = (
-            Token('keyword', 'class'), 
-            Token('identifier', 'Main'), 
-            Token('symbol', '{'),
-            Token('symbol', '}'),
+            Token('keyword', 'static'), 
+            Token('keyword', 'int'),  # Dummy type
+            Token('identifier', 'foo'), 
+            Token('symbol', ';'),
         )
 
-        expected = Token('class', [
-                Token('keyword', 'class'), 
-                Token('identifier', 'Main'), 
-                Token('symbol', '{'),
-                Token('symbol', '}'),
+        expected = Token('classVarDec', [
+            Token('keyword', 'static'), 
+            Token('dummy', 'dummy'),
+            Token('identifier', 'foo'), 
+            Token('symbol', ';'),
         ])
 
-        actual = Parser(tokens).parse_class()
+        parser = Parser(tokens)
+        parser.parse_type = self._mock_parse(parser)
+
+        actual = parser.parse_class_var_declaration()
         self.assertEqual(expected, actual)
+
+    def test_class_var_declaration_multiple(self):
+        """
+        ('static' | 'field' ) type varName (',' varName)* ';' 
+        """
+        pass
             
 class TestTokenizer(TestCase):
     maxDiff = None

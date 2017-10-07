@@ -39,15 +39,21 @@ class Parser(object):
         return self.parse_class()
 
     def parse_class(self):
+        """
+        'class' className '{' classVarDec* subroutineDec* '}' 
+        """
         node = Token('class', [])
 
         self.try_add(node, 'keyword', value='class')
         self.try_add(node, 'identifier')
+        self.try_add(node, 'symbol', value='{')
 
         while self.is_class_var_declaration():
             node.value.append(self.parse_class_var_declaration())
 
-        self.try_add(node, 'symbol', value='{')
+        while self.is_subroutine_declaration():
+            node.value.append(self.parse_subroutine_declaration())
+
         self.try_add(node, 'symbol', value='}')
 
         return node
@@ -59,8 +65,28 @@ class Parser(object):
         )
 
     def parse_class_var_declaration(self):
+        """
+        ('static' | 'field' ) type varName (',' varName)* ';' 
+        """
         node = Token('classVarDec', [])
+        self.try_add(node, 'keyword', value='static^field')
+        node.value.append(self.parse_type())
+        self.try_add(node, 'identifier')
+        
+        # TODO: Handle (',' varName)*
 
+        self.try_add(node, 'symbol', value=';')
+        return node
+
+    def is_subroutine_declaration(self):
+        return self.token in (
+            Token('keyword', 'constructor'),
+            Token('keyword', 'function'),
+            Token('keyword', 'method')
+        )
+
+    def parse_subroutine_declaration(self):
+        node = Token('classVarDec', [])
         try_add(node, tokens[idx], 'keyword', value='static^field')
         node.value.append(self.parse_type())
 
