@@ -132,8 +132,8 @@ class Parser(object):
             node.append(self.parse_type())
             self.try_add(node, 'identifier')
             while self.token.value == ',':
-                node.append(self.parse_type())
                 self.try_add(node, 'symbol', value=',')
+                node.append(self.parse_type())
                 self.try_add(node, 'identifier')
         return node
 
@@ -167,4 +167,7 @@ class Parser(object):
 
     @property
     def token(self):
-        return self.tokens[self.idx]
+        try:
+            return self.tokens[self.idx]
+        except IndexError:
+            return Token(None, None)

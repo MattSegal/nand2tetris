@@ -190,16 +190,319 @@ class TestParser(TestCase):
         """
         'var' type varName (',' varName)* ';'
         """
-        pass
+        tokens = (
+            Token('keyword', 'var'),
+            Token('dummy', 'dummy'),  # Dummy type 
+            Token('identifier', 'foo'),
+            Token('symbol', ','),
+            Token('identifier', 'bar'), 
+            Token('symbol', ';'),
+        )
+
+        expected = Token('varDec', [
+            Token('keyword', 'var'),
+            Token('dummy', 'dummy'),  # Dummy type 
+            Token('identifier', 'foo'),
+            Token('symbol', ','),
+            Token('identifier', 'bar'), 
+            Token('symbol', ';'),
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_type = self._mock_parse(parser)
+        
+        actual = parser.parse_var_declaration()
+        self.assertEqual(expected, actual)
 
     def test_parse_parameter_list(self):
         """
         ( (type identifier) (',' type identifier)*)?
         """
-        pass
+        tokens = (
+            Token('dummy', 'dummy'),  # Dummy type 
+            Token('identifier', 'foo'),
+            Token('symbol', ','),
+            Token('dummy', 'dummy'),  # Dummy type 
+            Token('identifier', 'bar'), 
+        )
+
+        expected = Token('parameterList', [
+            Token('dummy', 'dummy'),  # Dummy type 
+            Token('identifier', 'foo'),
+            Token('symbol', ','),
+            Token('dummy', 'dummy'),  # Dummy type 
+            Token('identifier', 'bar'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_type = self._mock_parse(parser)
+        
+        actual = parser.parse_parameter_list()
+        self.assertEqual(expected, actual)
 
 
-            
+    def test_parse_parameter_list_empty(self):
+        """
+        ( (type identifier) (',' type identifier)*)?
+        """
+        tokens = (Token('symbol',')'), )
+        expected = Token('parameterList', [])
+
+        parser = Parser(tokens)
+        parser.parse_type = self._mock_parse(parser)
+        
+        actual = parser.parse_parameter_list()
+        self.assertEqual(expected, actual)
+
+
+    def test_parse_statements(self):
+        """
+        statements: (letStatement | ifStatement | whileStatement | doStatement | returnStatement)*
+        """
+        tokens = (
+            Token('keyword', 'let'), 
+            Token('keyword', 'if'),
+            Token('keyword', 'while'),
+            Token('keyword', 'do'),   
+            Token('keyword', 'return'), 
+        )
+
+        expected = Token('statements', [
+            Token('dummy', 'dummy'), 
+            Token('dummy', 'dummy'), 
+            Token('dummy', 'dummy'), 
+            Token('dummy', 'dummy'), 
+            Token('dummy', 'dummy'), 
+        ])
+
+        parser = Parser(tokens)
+
+        parser.parse_let_statement = self._mock_parse(parser)
+        parser.parse_if_statement = self._mock_parse(parser)
+        parser.parse_while_statement = self._mock_parse(parser)
+        parser.parse_do_statement = self._mock_parse(parser)
+        parser.parse_return_statement = self._mock_parse(parser)
+        
+        actual = parser.parse_statements()
+        self.assertEqual(expected, actual)
+
+
+    def test_parse_let_statement(self):
+        """
+        'let' varName ('[' expression ']')? '=' expression ';'
+        """
+        tokens = (
+            Token('keyword', 'let'), 
+            Token('identifier', 'foo'),
+            Token('symbol', '='),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ';'), 
+        )
+
+        expected = Token('letStatement', [
+            Token('keyword', 'let'), 
+            Token('identifier', 'foo'),
+            Token('symbol', '='),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ';'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_expression = self._mock_parse(parser)
+        actual = parser.parse_let_statement()
+        self.assertEqual(expected, actual)
+
+    def test_parse_let_statement_index(self):
+        """
+        'let' varName ('[' expression ']')? '=' expression ';'
+        """
+        tokens = (
+            Token('keyword', 'let'), 
+            Token('identifier', 'foo'),
+            Token('symbol', '['),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ']'),
+            Token('symbol', '='),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ';'), 
+        )
+
+        expected = Token('letStatement', [
+            Token('keyword', 'let'), 
+            Token('identifier', 'foo'),
+            Token('symbol', '['),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ']'),
+            Token('symbol', '='),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ';'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_expression = self._mock_parse(parser)
+        actual = parser.parse_let_statement()
+        self.assertEqual(expected, actual)
+
+    def test_parse_if_statement(self):
+        """
+        'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )?
+        """
+        tokens = (
+            Token('keyword', 'if'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', '}'), 
+        )
+
+        expected = Token('ifStatement', [
+            Token('keyword', 'if'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy statements   
+            Token('symbol', '}'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_expression = self._mock_parse(parser)
+        parser.parse_statements = self._mock_parse(parser)
+        actual = parser.parse_if_statement()
+        self.assertEqual(expected, actual)
+
+    def test_parse_if_else_statement(self):
+        """
+        'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )?
+        """
+        tokens = (
+            Token('keyword', 'if'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy statements   
+            Token('symbol', '}'),
+            Token('keyword', 'else'), 
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy statements   
+            Token('symbol', '}'),
+        )
+
+        expected = Token('ifStatement', [
+            Token('keyword', 'if'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy statements   
+            Token('symbol', '}'),
+            Token('keyword', 'else'), 
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy statements   
+            Token('symbol', '}'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_expression = self._mock_parse(parser)
+        parser.parse_statements = self._mock_parse(parser)
+        actual = parser.parse_if_statement()
+        self.assertEqual(expected, actual)
+
+    def test_parse_while_statement(self):
+        """
+        'while' '(' expression ')' '{' statements '}'
+        """
+        tokens = (
+            Token('keyword', 'while'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', '}'), 
+        )
+
+        expected = Token('whileStatement', [
+            Token('keyword', 'while'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('dummy', 'dummy'),  # Dummy statements   
+            Token('symbol', '}'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_expression = self._mock_parse(parser)
+        parser.parse_statements = self._mock_parse(parser)
+        actual = parser.parse_while_statement()
+        self.assertEqual(expected, actual)
+
+
+    def test_parse_do_statement(self):
+        """
+        'do' subroutineCall ';'
+        """
+        tokens = (
+            Token('keyword', 'do'), 
+            Token('dummy', 'dummy'),  # Dummy subroutineCall   
+            Token('symbol', ';'), 
+        )
+
+        expected = Token('doStatement', [
+            Token('keyword', 'do'), 
+            Token('dummy', 'dummy'),  # Dummy subroutineCall   
+            Token('symbol', ';'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_subroutine_call = self._mock_parse(parser)
+        actual = parser.parse_do_statement()
+        self.assertEqual(expected, actual)
+
+    def test_parse_return_statement(self):
+        """
+        'return' expression? ';' 
+        """
+        tokens = (
+            Token('keyword', 'return'), 
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ';'), 
+        )
+
+        expected = Token('returnStatement', [
+            Token('keyword', 'return'), 
+            Token('dummy', 'dummy'),  # Dummy expression   
+            Token('symbol', ';'), 
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_expression = self._mock_parse(parser)
+        actual = parser.parse_return_statement()
+        self.assertEqual(expected, actual)
+
+    def test_parse_return_statement_empty(self):
+        """
+        'return' expression? ';' 
+        """
+        tokens = (
+            Token('keyword', 'return'), 
+            Token('symbol', ';'), 
+        )
+
+        expected = Token('returnStatement', [
+            Token('keyword', 'return'), 
+            Token('symbol', ';'), 
+        ])
+
+        parser = Parser(tokens)
+        actual = parser.parse_return_statement()
+        self.assertEqual(expected, actual)
+
+
 class TestTokenizer(TestCase):
     maxDiff = None
     def test_tokenize(self):
