@@ -49,10 +49,10 @@ class Parser(object):
         self.try_add(node, 'symbol', value='{')
 
         while self.is_class_var_declaration():
-            node.value.append(self.parse_class_var_declaration())
+            node.append(self.parse_class_var_declaration())
 
         while self.is_subroutine_declaration():
-            node.value.append(self.parse_subroutine_declaration())
+            node.append(self.parse_subroutine_declaration())
 
         self.try_add(node, 'symbol', value='}')
 
@@ -70,11 +70,14 @@ class Parser(object):
         """
         node = Token('classVarDec', [])
         self.try_add(node, 'keyword', value='static^field')
-        node.value.append(self.parse_type())
-        self.try_add(node, 'identifier')
-        
-        # TODO: Handle (',' varName)*
+        node.append(self.parse_type())
 
+        self.try_add(node, 'identifier')
+
+        while self.token.value == ',':
+            self.try_add(node, 'symbol', value=',')
+            self.try_add(node, 'identifier')
+ 
         self.try_add(node, 'symbol', value=';')
         return node
 
@@ -86,9 +89,54 @@ class Parser(object):
         )
 
     def parse_subroutine_declaration(self):
-        node = Token('classVarDec', [])
-        try_add(node, tokens[idx], 'keyword', value='static^field')
-        node.value.append(self.parse_type())
+        node = Token('subroutineDec', [])
+        self.try_add(node, 'keyword', value='constructor^function^method')
+        
+        if self.token.value == 'void':
+            self.try_add(node, 'keyword', value='void')
+        else:
+            node.append(self.parse_type())
+        self.try_add(node, 'identifier')
+        self.try_add(node, 'symbol', value='(')
+        node.append(self.parse_parameter_list())
+        self.try_add(node, 'symbol', value=')')
+        node.append(self.parse_subroutine_body())
+        return node
+
+    def parse_subroutine_body(self):
+        node = Token('subroutineBody', [])
+        self.try_add(node, 'symbol', value='{')
+
+        while self.token.value == 'var':
+            node.append(self.parse_var_declaration())
+
+        node.append(self.parse_statements())
+        self.try_add(node, 'symbol', value='}')
+        return node
+
+
+    def parse_var_declaration(self):
+        node = Token('varDec', [])
+        self.try_add(node, 'keyword', value='var')
+        node.append(self.parse_type())
+        self.try_add(node, 'identifier')
+        while self.token.value == ',':
+            self.try_add(node, 'symbol', value=',')
+            self.try_add(node, 'identifier')
+        self.try_add(node, 'symbol', value=';')
+        return node
+
+    def parse_parameter_list(self):
+        node = Token('parameterList', [])
+        if self.token.value != ')':
+            node.append(self.parse_type())
+            self.try_add(node, 'identifier')
+            while self.token.value == ',':
+                node.append(self.parse_type())
+                self.try_add(node, 'symbol', value=',')
+                self.try_add(node, 'identifier')
+        return node
+
 
     def parse_op(self, token):
         if token in OPERATIONS:
@@ -114,7 +162,7 @@ class Parser(object):
         assert self.token.type == _type, 'Token {} must be type {}'.format(self.token, _type)
         if value:
             assert self.token.value in value.split(OR), 'Token {} must have value {}'.format(self.token, value.split(OR))
-        node.value.append(self.token)
+        node.append(self.token)
         self.idx += 1
 
     @property

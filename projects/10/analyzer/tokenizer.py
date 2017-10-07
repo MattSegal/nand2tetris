@@ -69,6 +69,9 @@ class Token(object):
         self.type = _type
         self.value = value
 
+    def append(self, val):
+        self.value.append(val)
+
     def __repr__(self):
         return '< {} {} >'.format(self.type, self.value)
 

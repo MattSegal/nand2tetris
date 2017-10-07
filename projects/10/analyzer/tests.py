@@ -97,7 +97,108 @@ class TestParser(TestCase):
         """
         ('static' | 'field' ) type varName (',' varName)* ';' 
         """
+        tokens = (
+            Token('keyword', 'static'), 
+            Token('keyword', 'int'),  # Dummy type
+            Token('identifier', 'foo'), 
+            Token('symbol', ','),
+            Token('identifier', 'bar'), 
+            Token('symbol', ','),
+            Token('identifier', 'baz'), 
+            Token('symbol', ';'),
+        )
+
+        expected = Token('classVarDec', [
+            Token('keyword', 'static'), 
+            Token('dummy', 'dummy'),
+            Token('identifier', 'foo'), 
+            Token('symbol', ','),
+            Token('identifier', 'bar'), 
+            Token('symbol', ','),
+            Token('identifier', 'baz'), 
+            Token('symbol', ';'),  
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_type = self._mock_parse(parser)
+
+        actual = parser.parse_class_var_declaration()
+        self.assertEqual(expected, actual)
+
+    def test_parse_subroutine_declaration(self):
+        """
+        ('constructor'|'function'|'method')  ('void'|type) identifier '('parameterList ')' subroutineBody
+        """
+        tokens = (
+            Token('keyword', 'method'), 
+            Token('keyword', 'int'),  # Dummy type
+            Token('identifier', 'foo'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy parameterList 
+            Token('symbol', ')'),
+            Token('dummy', 'dummy'), # Dummy subroutineBody
+        )
+
+        expected = Token('subroutineDec', [
+            Token('keyword', 'method'), 
+            Token('dummy', 'dummy'),  # Dummy type
+            Token('identifier', 'foo'), 
+            Token('symbol', '('),
+            Token('dummy', 'dummy'),  # Dummy parameterList 
+            Token('symbol', ')'),
+            Token('dummy', 'dummy'), # Dummy subroutineBody
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_type = self._mock_parse(parser)
+        parser.parse_parameter_list = self._mock_parse(parser)
+        parser.parse_subroutine_body = self._mock_parse(parser)
+
+        actual = parser.parse_subroutine_declaration()
+        self.assertEqual(expected, actual)
+
+
+    def test_parse_subroutine_body(self):
+        """
+        '{' varDec* statements '}' 
+        """
+        tokens = (
+            Token('symbol', '{'), 
+            Token('keyword', 'var'),  # Dummy var dec
+            Token('keyword', 'var'),  # Dummy var dec
+            Token('dummy', 'dummy'),  # Dummy statements 
+            Token('symbol', '}'),
+        )
+
+        expected = Token('subroutineBody', [
+            Token('symbol', '{'), 
+            Token('dummy', 'dummy'),  # Dummy var dec
+            Token('dummy', 'dummy'),  # Dummy var dec
+            Token('dummy', 'dummy'),  # Dummy statements 
+            Token('symbol', '}'),
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_var_declaration = self._mock_parse(parser)
+        parser.parse_statements = self._mock_parse(parser)
+        
+        actual = parser.parse_subroutine_body()
+        self.assertEqual(expected, actual)
+
+
+    def test_parse_var_declaration(self):
+        """
+        'var' type varName (',' varName)* ';'
+        """
         pass
+
+    def test_parse_parameter_list(self):
+        """
+        ( (type identifier) (',' type identifier)*)?
+        """
+        pass
+
+
             
 class TestTokenizer(TestCase):
     maxDiff = None
