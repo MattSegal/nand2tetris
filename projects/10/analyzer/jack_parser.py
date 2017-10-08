@@ -35,9 +35,6 @@ class Parser(object):
         self.tokens = tokens
         self.idx = 0
 
-    def parse(self):
-        return self.parse_class()
-
     def parse_class(self):
         """
         'class' className '{' classVarDec* subroutineDec* '}' 
@@ -138,23 +135,179 @@ class Parser(object):
         return node
 
 
-    def parse_op(self, token):
-        if token in OPERATIONS:
-            return token
-        else:
-            raise ValueError(token, 'is not a valid operation.')
+    def parse_statements(self):
+        node = Token('statements', [])
+        while self.is_statement():
+            if self.token == Token('keyword', 'let'):
+                node.append(self.parse_let_statement())
+            elif self.token == Token('keyword', 'if'):
+                node.append(self.parse_if_statement())
+            elif self.token == Token('keyword', 'while'):
+                node.append(self.parse_while_statement())
+            elif self.token == Token('keyword', 'do'):
+                node.append(self.parse_do_statement())
+            elif self.token == Token('keyword', 'return'):
+                node.append(self.parse_return_statement())
+        return node
 
-    def parse_unary_op(self, token):
-        if token in UNARY_OPERATIONS:
-            return token
-        else:
-            raise ValueError(token, 'is not a valid unary operation.')
+    def is_statement(self):
+        return self.token in (
+            Token('keyword', 'let'), 
+            Token('keyword', 'if'),
+            Token('keyword', 'while'),
+            Token('keyword', 'do'),   
+            Token('keyword', 'return')
+        )
 
-    def parse_keyword_constant(self, token):
-        if token in KEYWORD_CONSTANTS:
-            return token
+    def parse_let_statement(self):
+        node = Token('letStatement', [])
+        self.try_add(node, 'keyword', value='let')
+        self.try_add(node, 'identifier')
+        if self.token.value == '[':
+            self.try_add(node, 'symbol', value='[')
+            node.append(self.parse_expression())
+            self.try_add(node, 'symbol', value=']')
+        self.try_add(node, 'symbol', value='=')
+        node.append(self.parse_expression())
+        self.try_add(node, 'symbol', value=';')
+        return node
+
+    def parse_if_statement(self):
+        node = Token('ifStatement', [])
+        self.try_add(node, 'keyword', value='if')
+        self.try_add(node, 'symbol', value='(')
+        node.append(self.parse_expression())
+        self.try_add(node, 'symbol', value=')')
+        self.try_add(node, 'symbol', value='{')
+        node.append(self.parse_statements())
+        self.try_add(node, 'symbol', value='}')
+        if self.token.value == 'else':
+            self.try_add(node, 'keyword', value='else')
+            self.try_add(node, 'symbol', value='{')
+            node.append(self.parse_statements())
+            self.try_add(node, 'symbol', value='}')
+        return node
+
+
+    def parse_while_statement(self):
+        node = Token('whileStatement', [])
+        self.try_add(node, 'keyword', value='while')
+        self.try_add(node, 'symbol', value='(')
+        node.append(self.parse_expression())
+        self.try_add(node, 'symbol', value=')')
+        self.try_add(node, 'symbol', value='{')
+        node.append(self.parse_statements())
+        self.try_add(node, 'symbol', value='}')
+        return node
+
+    def parse_do_statement(self):
+        node = Token('doStatement', [])
+        self.try_add(node, 'keyword', value='do')
+        node.append(self.parse_subroutine_call())
+        self.try_add(node, 'symbol', value=';')
+        return node
+
+    def parse_return_statement(self):
+        node = Token('returnStatement', [])
+        self.try_add(node, 'keyword', value='return')
+        if self.token.value != ';':
+            node.append(self.parse_expression())
+        self.try_add(node, 'symbol', value=';')
+        return node
+
+    def parse_type(self):
+        """
+        'int' | 'char' | 'boolean' | identifier 
+        """
+        standard_types = (
+            Token('keyword', 'int'), 
+            Token('keyword', 'char'),
+            Token('keyword', 'boolean')
+        )
+
+        if not self.token in standard_types:
+            # Hack to validate identifier
+            self.try_add(Token('dummy',[]), 'identifier')
         else:
-            raise ValueError(token, 'is not a valid keyword constant.')
+            self.idx += 1
+        return self.token
+
+    def parse_expression(self):
+        """
+        term (op term)*
+        """
+        node = Token('expression', [])
+        node.append(self.parse_term())
+        while self.token in OPERATIONS:
+            node.append(self.token)
+            self.idx += 1
+            node.append(self.parse_term())
+        return node        
+
+    def parse_term(self):
+        """
+        integerConstant | stringConstant | keywordConstant | 
+        identifier | identifier '[' expression ']' | 
+        subroutineCall | '(' expression ')' | (unaryOp term)
+        """
+        node = Token('term', [])
+        # integerConstant | stringConstant
+        if self.token.type in ('integerConstant', 'stringConstant'):
+            node.append(self.token)
+            self.idx += 1
+        # keywordConstant
+        elif self.token in KEYWORD_CONSTANTS:
+            node.append(self.token)
+            self.idx += 1
+        # unaryOp term
+        elif self.token in UNARY_OPERATIONS:
+            node.append(self.token)
+            self.idx += 1
+            node.append(self.parse_term())
+        # '(' expression ')'
+        elif self.token.value == '(':
+            self.try_add(node, 'symbol', '(')
+            node.append(self.parse_expression())
+            self.try_add(node, 'symbol', ')')
+        # subroutineCall
+        elif self.tokens[self.idx + 1] in (Token('symbol', '.'), Token('symbol', '(')): 
+            node.append(self.parse_subroutine_call())
+        # identifier | identifier '[' expression ']' 
+        else:
+            self.try_add(node, 'identifier')
+            if self.token.value == '[':
+                self.try_add(node, 'symbol', '[')
+                node.append(self.parse_expression())
+                self.try_add(node, 'symbol', ']')
+        return node
+
+    def parse_subroutine_call(self):
+        """
+        identifier '(' expressionList ')' | 
+        identifier '.' identifier '(' expressionList ')'
+        """
+        node = Token('subroutineCall', [])
+        self.try_add(node, 'identifier')
+        if self.token.value == '.':
+            self.try_add(node, 'identifier')
+        self.try_add(node, 'symbol', '(')
+        node.append(self.parse_expression_list())
+        self.try_add(node, 'symbol', ')')
+        return node
+
+    def parse_expression_list(self):
+        """
+        (expression (',' expression)* )?
+        We should always expect a trailing ')'
+        """
+        node = Token('expressionList')
+        if self.token.value != ')':
+            assert Token('symbol', ')') in self.tokens[self.idx:], 'Expression list must close'
+            node.append(self.parse_expression())
+            while self.token.value != ')':
+                self.try_add(node, 'symbol', value=',')
+                node.append(self.parse_expression)
+        return node
 
     def try_add(self, node, _type, value=None):
         assert isinstance(self.token, Token), '{} {} must be a Token'.format(type(self.token), self.token)

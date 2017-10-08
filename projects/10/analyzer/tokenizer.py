@@ -5,14 +5,16 @@ Use tokenize() to convert a string into a list of tokens
 import re
 from constants import KEYWORDS, SYMBOLS
 
+MULTILINE_COMMENT_REGEX = r'\/\*[\s\S]*?\*\/'
 COMMENT_REGEX = r'\/\/[\s\S]*'
 IDENTIFIER_REGEX = r'([A-Z|a-z|_]){1}([A-Z|a-z|0-9|_])*'
 WHITESPACE = (' ', '\t', '\n', '\r')
 
 def tokenize(text):
     tokens = []
+    text = re.sub(MULTILINE_COMMENT_REGEX, '', text)
     for line in text.split('\n'):
-        line = strip_comments(line)
+        line = re.sub(COMMENT_REGEX, '', line)
         tokens += extract_tokens(line)
     return tokens
 
@@ -60,9 +62,6 @@ def extract_tokens(line):
 def is_valid_identifier(word):
     return bool(re.match(IDENTIFIER_REGEX, word))
 
-def strip_comments(line):
-    return re.sub(COMMENT_REGEX, '', line)
-
 
 class Token(object):
     def __init__(self, _type, value):
@@ -70,6 +69,7 @@ class Token(object):
         self.value = value
 
     def append(self, val):
+        print val
         self.value.append(val)
 
     def __repr__(self):

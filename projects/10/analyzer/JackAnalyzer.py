@@ -5,6 +5,7 @@ import os
 import os.path as path
 
 from tokenizer import tokenize
+from jack_parser import Parser
 
 def main(input_node):
     if path.isdir(input_node):
@@ -18,6 +19,7 @@ def main(input_node):
         raise ValueError('{} is not a valid file or directory'.format(input_node))
 
     for filename in input_files:
+        print 'Parsing {}'.format(filename)
         output_filename = filename[:-4] + 'matt.xml'
         with open(filename, 'r') as f:
             file_text = f.read()
@@ -27,7 +29,8 @@ def main(input_node):
 
 def analyse(file_text):
     tokens = tokenize(file_text)
-
+    parse_tree = Parser(tokens).parse_class()
+    return str(parse_tree)
 
 
 if __name__ == '__main__':

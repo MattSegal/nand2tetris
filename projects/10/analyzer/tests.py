@@ -257,7 +257,7 @@ class TestParser(TestCase):
 
     def test_parse_statements(self):
         """
-        statements: (letStatement | ifStatement | whileStatement | doStatement | returnStatement)*
+        (letStatement | ifStatement | whileStatement | doStatement | returnStatement)*
         """
         tokens = (
             Token('keyword', 'let'), 
@@ -265,6 +265,7 @@ class TestParser(TestCase):
             Token('keyword', 'while'),
             Token('keyword', 'do'),   
             Token('keyword', 'return'), 
+            Token('symbol', '}')  # Expect unparsed
         )
 
         expected = Token('statements', [
@@ -501,6 +502,52 @@ class TestParser(TestCase):
         parser = Parser(tokens)
         actual = parser.parse_return_statement()
         self.assertEqual(expected, actual)
+
+    def test_parse_expression(self):
+        """
+        term (op term)*
+        """
+        tokens = (
+            Token('integerConstant', '1'), 
+            Token('symbol', '+'), 
+            Token('integerConstant', '1'), 
+            Token('symbol', '+'),
+            Token('integerConstant', '1'), 
+        )
+
+        expected = Token('expression', [
+            Token('dummy', 'dummy'), 
+            Token('symbol', '+'), 
+            Token('dummy', 'dummy'), 
+            Token('symbol', '+'),
+            Token('dummy', 'dummy'),  
+        ])
+
+        parser = Parser(tokens)
+        parser.parse_term = self._mock_parse(parser)
+        actual = parser.parse_expression()
+        self.assertEqual(expected, actual)
+
+    def test_parse_term(self):
+        """
+        integerConstant | stringConstant | keywordConstant | 
+        identifier | identifier '[' expression ']' | 
+        subroutineCall | '(' expression ')' | (unaryOp term)
+        """
+        pass 
+
+    def test_parse_subroutine_call(self):
+        """
+        identifier '(' expressionList ')' | 
+        identifier '.' identifier '(' expressionList ')'
+        """
+        pass
+
+    def test_parse_expression_list(self):
+        """
+        (expression (',' expression)* )? 
+        """
+        pass
 
 
 class TestTokenizer(TestCase):
