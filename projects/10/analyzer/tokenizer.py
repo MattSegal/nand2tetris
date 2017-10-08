@@ -69,8 +69,34 @@ class Token(object):
         self.value = value
 
     def append(self, val):
-        print val
         self.value.append(val)
+
+    def to_xml(self):
+        if isinstance(self.value, list):
+            assert all(isinstance(child, Token) for child in self.value)
+            children = ''.join(
+                '\n'.join(
+                    ('  ' + line if line else line) 
+                    for line in token.to_xml().split('\n')
+                )
+                for token in self.value
+            )
+            if children:            
+                return '<{type}>\n{children}</{type}>\n'.format(
+                    type=self.type, children=children
+                )
+            else:
+                return '<{type}>\n</{type}>\n'.format(type=self.type)
+        else:
+            value = (self.value
+                .replace('&', '&amp;')
+                .replace('>', '&gt;')
+                .replace('<', '&lt;')
+                .replace('"', ' &quot;')
+            )
+            return '<{type}> {value} </{type}>\n'.format(
+                type=self.type, value=value
+            )
 
     def __repr__(self):
         return '< {} {} >'.format(self.type, self.value)

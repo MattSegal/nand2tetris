@@ -30,7 +30,7 @@ def main(input_node):
 def analyse(file_text):
     tokens = tokenize(file_text)
     parse_tree = Parser(tokens).parse_class()
-    return str(parse_tree)
+    return parse_tree.to_xml()
 
 
 if __name__ == '__main__':

@@ -203,7 +203,8 @@ class Parser(object):
     def parse_do_statement(self):
         node = Token('doStatement', [])
         self.try_add(node, 'keyword', value='do')
-        node.append(self.parse_subroutine_call())
+        for token in self.parse_subroutine_call():
+            node.append(token)
         self.try_add(node, 'symbol', value=';')
         return node
 
@@ -225,12 +226,14 @@ class Parser(object):
             Token('keyword', 'boolean')
         )
 
+        token = self.token
         if not self.token in standard_types:
             # Hack to validate identifier
             self.try_add(Token('dummy',[]), 'identifier')
         else:
             self.idx += 1
-        return self.token
+        return token
+
 
     def parse_expression(self):
         """
@@ -271,7 +274,8 @@ class Parser(object):
             self.try_add(node, 'symbol', ')')
         # subroutineCall
         elif self.tokens[self.idx + 1] in (Token('symbol', '.'), Token('symbol', '(')): 
-            node.append(self.parse_subroutine_call())
+            for token in self.parse_subroutine_call(): 
+                node.append(token)
         # identifier | identifier '[' expression ']' 
         else:
             self.try_add(node, 'identifier')
@@ -289,24 +293,27 @@ class Parser(object):
         node = Token('subroutineCall', [])
         self.try_add(node, 'identifier')
         if self.token.value == '.':
+            self.try_add(node, 'symbol', '.')
             self.try_add(node, 'identifier')
         self.try_add(node, 'symbol', '(')
         node.append(self.parse_expression_list())
         self.try_add(node, 'symbol', ')')
-        return node
+        # Not used in XML format
+        for token in node.value:
+            yield token
 
     def parse_expression_list(self):
         """
         (expression (',' expression)* )?
         We should always expect a trailing ')'
         """
-        node = Token('expressionList')
+        node = Token('expressionList', [])
         if self.token.value != ')':
             assert Token('symbol', ')') in self.tokens[self.idx:], 'Expression list must close'
             node.append(self.parse_expression())
             while self.token.value != ')':
                 self.try_add(node, 'symbol', value=',')
-                node.append(self.parse_expression)
+                node.append(self.parse_expression())
         return node
 
     def try_add(self, node, _type, value=None):

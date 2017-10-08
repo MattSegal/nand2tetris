@@ -5,6 +5,10 @@ from tokenizer import tokenize, Token
 from jack_parser import Parser
 from constants import KEYWORDS, SYMBOLS
 
+
+class TestXML(TestCase):
+    
+
 class TestParser(TestCase):
 
     @staticmethod

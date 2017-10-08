@@ -11,7 +11,7 @@ class Main {
                             // in the Square files.
     function void main() {
       var SquareGame game;
-      let game = SquareGame.new();
+      let game = SquareGame.new(); // FUUU
       do game.run();
       do game.dispose();
       return;
