@@ -6,6 +6,8 @@ import os.path as path
 
 from tokenizer import tokenize
 from jack_parser import Parser
+from code_generator import CodeGenerator
+
 
 def main(input_node):
     if path.isdir(input_node):
@@ -19,18 +21,19 @@ def main(input_node):
         raise ValueError('{} is not a valid file or directory'.format(input_node))
 
     for filename in input_files:
-        print 'Parsing {}'.format(filename)
-        output_filename = filename[:-4] + 'xml'
+        print 'Compiling {}'.format(filename)
+        output_filename = filename[:-4] + 'matt.vm'
         with open(filename, 'r') as f:
             file_text = f.read()
-        file_xml = analyse(file_text)
+        file_vm_text = compile(file_text)
         with open(output_filename, 'w') as f:
-            f.write(file_xml)
+            f.write(file_vm_text)
 
-def analyse(file_text):
+def compile(file_text):
     tokens = tokenize(file_text)
     parse_tree = Parser(tokens).parse_class()
-    return parse_tree.to_xml()
+    vm_text = CodeGenerator(parse_tree).generate()
+    return vm_text
 
 
 if __name__ == '__main__':

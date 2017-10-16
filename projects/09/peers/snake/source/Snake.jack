@@ -1,0 +1,116 @@
+class Snake{//Snake Class
+
+field Array body;
+field int length;
+
+// constructor for Snake object
+constructor Snake new(){
+
+let body =Array.new(100);
+
+let length  = 3; // Snake Head + Body of the snake
+
+let body[0] = 250;
+let body[1] = 125;
+
+let body[2] = 251;
+let body[3] = 125;
+
+let body[4] = 252;
+let body[5] = 125;
+
+do drawSnake(getSnakeHeadXpos(),getSnakeHeadYpos(),true); //to draw Snake
+
+return this;
+}
+method void dispose(){
+do Memory.deAlloc(this);
+return;
+}
+
+method void drawSnake(int X,int Y,boolean blackPixel){
+ do Screen.setColor(blackPixel);
+ if((X < 0) | (X > 511) | (Y < 0) | (Y > 255)){
+do Output.printString("Game Over!");
+do Sys.halt();
+}
+do Screen.drawPixel(X,Y);
+return;
+}
+
+method int getSnakeHeadXpos(){
+return body[(length-1)* 2];
+}
+method int getSnakeHeadYpos(){
+return body[1 + ((length-1)* 2)];
+}
+
+
+method void moveSnake(int direction){
+var int p;
+var int Xpos;
+
+let p = 0;
+let Xpos = ((length -1) * 2);
+
+do drawSnake(body[0], body[1], false);
+
+while (p < ((length *2)-2)) {
+
+let body[p] = body[p+2];
+let body[p+1] = body[p+3];
+let p = p+2;
+}
+ if (direction = 1){
+let body[Xpos+1] = body[Xpos+1] - 1;
+}
+if (direction = 2){
+let body[Xpos+1] = body[Xpos+1] + 1;
+}
+if (direction = 3){
+let body[Xpos] = body[Xpos] - 1;
+}
+if (direction = 4){
+let body[Xpos] = body[Xpos] + 1;
+}
+
+do drawSnake(getSnakeHeadXpos(),getSnakeHeadYpos(),true);
+
+return;
+}
+
+method void snakeGrow(int direction){
+var int newXpos, Xpos;
+if (length = 256){
+do Output.printString("Congratulations!!! You successfully completed the Level!");
+do Sys.halt();
+}
+
+let Xpos = ((length -1) * 2);
+let newXpos = Xpos + 2;
+let length = length +1;
+
+if (direction = 1){
+let body[newXpos] = body[Xpos];
+let body[newXpos+1] = body[Xpos+1] + 1;
+}
+if (direction = 2){
+let body[newXpos] = body[Xpos];
+let body[newXpos+1] = body[Xpos+1] - 1;
+}
+if (direction = 3){
+let body[newXpos] = body[Xpos]+1;
+let body[newXpos+1] = body[Xpos+1];
+}
+if (direction = 4){
+let body[newXpos] = body[Xpos]-1;
+let body[newXpos+1] = body[Xpos+1];
+}
+
+do drawSnake(getSnakeHeadXpos(),getSnakeHeadYpos(),true);
+
+return;
+
+}
+
+}

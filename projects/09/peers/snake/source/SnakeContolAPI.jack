@@ -1,0 +1,72 @@
+class SnakeContolAPI{
+field Snake mysnake;
+field int direction, appleXpos, appleYpos;
+
+constructor SnakeContolAPI new(){
+let mysnake = Snake.new();
+let direction = 0;
+let appleXpos = 100;
+let appleYpos = 100;
+
+return this;
+}
+
+method void dispose(){
+do mysnake.dispose();
+do Memory.deAlloc(this);
+return;
+}
+
+method void run(){
+var char key;
+
+while(true){
+while(key = 0){
+let key = Keyboard.keyPressed();
+do SnakeGameStart();
+}
+
+if (key = 131){
+let direction = 1;
+}
+
+if (key = 133){
+let direction = 2;
+}
+
+if (key = 130){
+let direction = 3;
+}
+
+if (key = 132){
+let direction = 4;
+}
+
+while(~(key = 0)){
+let key = Keyboard.keyPressed();
+do SnakeGameStart();
+}
+}
+return; 
+}
+method void SnakeGameStart(){
+
+var int SnakeHeadXpos, SnakeHeadYpos;
+let SnakeHeadXpos=mysnake.getSnakeHeadXpos();
+let SnakeHeadYpos=mysnake.getSnakeHeadYpos();
+
+if (SnakeHeadXpos = appleXpos & SnakeHeadYpos = appleYpos){
+do mysnake.snakeGrow(direction);
+
+let appleXpos = appleXpos + 10;
+let appleYpos = appleYpos + 20;
+
+do mysnake.drawSnake(appleXpos,appleYpos,true);
+}
+
+do mysnake.moveSnake(direction);
+do mysnake.drawSnake(appleXpos,appleYpos,true);
+do Sys.wait(150);
+return;
+}
+}

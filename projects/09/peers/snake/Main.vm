@@ -1,0 +1,11 @@
+function Main.main 1
+call SnakeContolAPI.new 0
+pop local 0
+push local 0
+call SnakeContolAPI.run 1
+pop temp 0
+push local 0
+call SnakeContolAPI.dispose 1
+pop temp 0
+push constant 0
+return

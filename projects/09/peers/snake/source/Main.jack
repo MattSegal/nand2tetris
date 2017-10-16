@@ -1,0 +1,11 @@
+class Main{
+function void main(){
+var SnakeContolAPI gameLoop;
+
+let gameLoop = SnakeContolAPI.new();
+do gameLoop.run();
+do gameLoop.dispose();
+
+return;
+}
+}
