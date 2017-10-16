@@ -83,6 +83,12 @@ class Token(object):
         else:
             raise ValueError('Token {} has no children'.format(self))
 
+    def __len__(self):
+        if self.has_children:
+            return self.value.__len__()
+        else:
+            raise ValueError('Token {} has no children'.format(self))
+
     @property
     def has_children(self):
         return isinstance(self.value, list)

@@ -88,7 +88,7 @@ class CodeGenerator(object):
                 var_name = token.value
                 self.subroutine_symbols[var_name] = {
                     'type': var_type,
-                    'kind': 'var',
+                    'kind': 'local',
                     'id': var_count,
                 }
                 var_count += 1
@@ -131,10 +131,14 @@ class CodeGenerator(object):
     def compile_let(self):
         pass
 
-    def compile_do(self):
-        # just do subroutine_call then pop the value off
-        pass
-
+    def compile_do(self, parse_tree):
+        # TODO: TEST ME
+        assert parse_tree.type == 'doStatement'
+        return self.compile_subroutine_call(parse_tree.value) + (
+            # Clear return value
+            'pop temp 0\n'
+        )
+ 
     def compile_if(self):
         pass
 
@@ -145,61 +149,88 @@ class CodeGenerator(object):
         pass
 
     def compile_expression(self, parse_tree):
-        # TODO: Start testing
         assert parse_tree.type in ('expression', 'term')
 
         if parse_tree.type == 'term':
-            assert len(parse_tree.value) == 1
-            term = parse_tree.value[0]
-            if term.type == 'integerConstant':
+            terms = parse_tree.value
+            if terms[0].type == 'integerConstant':
                 # Numbers
-                return 'push constant {}\n'.format(term.value)
-            elif term.type == 'stringConstant':
+                assert len(terms) == 1
+                return 'push constant {}\n'.format(terms[0].value)
+            elif terms[0].type == 'stringConstant':
                 # Strings
-                string = term.value
-                # String constants are handled using the OS constructor String.new(length) 
-                # and the OS method String.appendChar(nextChar).
-                # push constant LEN
-                # call String.new 1
-                # Then a bunch of subroutine calls for the obj
-            elif term.type == 'identifier':
-                # Variables
-                variable = self._get_variable(term.value)
-                return 'push {kind} {id}\n'.format(**variable)
-            elif term.type == 'keyword':
+                assert len(terms) == 1
+                string = terms[0].value
+                return (
+                    # Create a new string obj, reserve THIS in temp
+                    'push constant {}\n'
+                    'call String.new 1\n'
+                    'push temp 0\n'
+                ).format(len(string)) + ''.join([
+                    (
+                        # Append each character to the string
+                        'pop temp 0\n'
+                        'push constant {}\n'
+                        'call String.appendChar 2\n'
+                    ).format(ord(c)) for c in string 
+                ]) + (
+                    'pop temp 0\n'
+                )
+            elif terms[0].type == 'keyword':
                 # Keyword constants 'true' | 'false' | 'null' | 'this' 
-                if term.value == 'this':
-                    variable = self._get_variable(term.value)
+                assert len(terms) == 1
+                keyword = terms[0].value
+                if keyword == 'this':
+                    variable = self._get_variable(keyword)
                     return 'push {kind} {id}\n'.format(**variable)
-                elif term.value in ('null', 'false'):
+                elif keyword in ('null', 'false'):
                     return 'push constant 0\n'
-                elif term.value == 'true':
+                elif keyword == 'true':
                     return 'push constant 1\nneg\n'
                 else:
-                    raise ValueError('{} is not a valid keyword'.format(term))
-            elif False:
-                pass # Array access varName [ ex ]
-            elif False:
-                pass # subroutine call
-            elif term.has_children and term.type == 'symbol' :
-                # Unary operations
-                assert len(term.value) == 2
-                return self.compile_expression(term[1]) + self.compile_unary_op(term[0])
-            elif term.has_children and term[0].value == '(' and term[-1].value == ')':
+                    raise ValueError('{} is not a valid keyword'.format(terms[0]))
+            elif len(terms) > 3 and terms[0].type == 'identifier' and  terms[1].value == '[':
+                # Array access varName [ ex ]
+                assert terms[2].type == 'expression'
+                variable = self._get_variable(terms[0].value)
+                return self.compile_expression(terms[2]) + (
+                    'push {kind} {id}\n'
+                    'add\n'
+                    'pop pointer 1\n'
+                    'push that 0\n'
+                ).format(**variable)
+               
+            elif (
+                len(terms) > 3 and (
+                    (terms[0].type == 'identifier' and terms[1].value == '.') or
+                    (terms[0].type == 'identifier' and terms[1].value == '(')
+                )
+            ):
+                return self.compile_subroutine_call(terms)
+            elif terms[0].value == '(' and terms[-1].value == ')':
                 # ( expression )
-                assert len(term.value) == 3
-                return self.compile_expression(term[1])
+                assert len(terms) == 3
+                return self.compile_expression(terms[1])
+            elif terms[0].type == 'symbol':
+                # Unary operations (-, ~)
+                assert len(terms) == 2
+                return self.compile_expression(terms[1]) + self.compile_unary_op(terms[0]) 
+            elif terms[0].type == 'identifier':
+                # Variables
+                assert len(terms) == 1
+                variable = self._get_variable(terms[0].value)
+                return 'push {kind} {id}\n'.format(**variable)
             else:
-                raise ValueError('{} is not a valid term'.format(term))
+                raise ValueError('{} is not a valid term'.format(parse_tree))
         elif parse_tree.type == 'expression':
             if len(parse_tree.value) == 1:
-                assert parse_tree.value.type == 'term'
+                assert parse_tree[0].type == 'term'
                 return self.compile_expression(parse_tree[0])
             elif len(parse_tree.value) == 3:
                 return (
                     self.compile_expression(parse_tree[0]) +
-                    self.compile_op(parse_tree[1]) +
-                    self.compile_expression(parse_tree[2])
+                    self.compile_expression(parse_tree[2]) +
+                    self.compile_op(parse_tree[1])
                 )
             else:
                 raise ValueError('{} is not a valid expression'.format(parse_tree)) 
@@ -227,12 +258,15 @@ class CodeGenerator(object):
         }
         return symbol_ops[op_symbol.value]
 
-    def compile_subroutine_call(self):
-        # leave return value on the stack
+    def compile_subroutine_call(self, parse_list):
         pass
 
-    def compile_expression_list(self):
-        pass
+    def compile_expression_list(self, parse_tree):
+        assert parse_tree.type == 'expressionList'
+        return ''.join([
+            self.compile_expression(t) for t in parse_tree 
+            if t.type == 'expression'
+        ])
 
     def _get_variable(self, name):
         try:

@@ -180,17 +180,17 @@ class TestCodeGenerator(TestCase):
             },
             'bar': {
                 'type': 'int',
-                'kind': 'var',
+                'kind': 'local',
                 'id': 0,
             },
             'baz': {
                 'type': 'int',
-                'kind': 'var',
+                'kind': 'local',
                 'id': 1,
             },
             'bing': {
                 'type': 'char',
-                'kind': 'var',
+                'kind': 'local',
                 'id': 2,
             },
         })
@@ -308,8 +308,264 @@ class TestCodeGenerator(TestCase):
     def test_compile_return_statement(self):
         pass
 
-    def test_compile_expression(self):
+    def test_compile_expression_integer(self):
+        term = Token('term', [
+            Token('integerConstant', '2'), 
+        ])
+
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression(term)
+
+        self.assertEqual(vm_code, (
+            'push constant 2\n'
+        ))
+
+    def test_compile_expression_string(self):
+        term = Token('term', [
+            Token('stringConstant', 'hey ho.'), 
+        ])
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push constant 7\n'
+            'call String.new 1\n'
+            'push temp 0\n'
+            'pop temp 0\n'
+            'push constant 104\n'
+            'call String.appendChar 2\n'
+            'pop temp 0\n'
+            'push constant 101\n'
+            'call String.appendChar 2\n'
+            'pop temp 0\n'
+            'push constant 121\n'
+            'call String.appendChar 2\n'
+            'pop temp 0\n'
+            'push constant 32\n'
+            'call String.appendChar 2\n'
+            'pop temp 0\n'
+            'push constant 104\n'
+            'call String.appendChar 2\n'
+            'pop temp 0\n'
+            'push constant 111\n'
+            'call String.appendChar 2\n'
+            'pop temp 0\n'
+            'push constant 46\n'
+            'call String.appendChar 2\n'
+            'pop temp 0\n'
+        ))
+
+    def test_compile_expression_identifier_class(self):
+        term = Token('term', [
+            Token('identifier', 'foo'), 
+        ])
+        generator = CodeGenerator()
+        generator.class_symbols = {
+            'foo': {
+                'type': 'int',
+                'kind': 'static',
+                'id': 1,
+            },
+        }
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push static 1\n'
+        ))
+
+    def test_compile_expression_identifier_subroutine(self):
+        term = Token('term', [
+            Token('identifier', 'foo'), 
+        ])
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'int',
+                'kind': 'argument',
+                'id': 2,
+            }
+        }
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push argument 2\n'
+        ))
+
+    def test_compile_expression_keyword_const(self):
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'this': {
+                'type': 'Foo',
+                'kind': 'argument',
+                'id': 0,
+            }
+        }
+        # this
+        term = Token('term', [Token('keyword', 'this')])
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, ('push argument 0\n'))
+
+        # false
+        term = Token('term', [Token('keyword', 'false')])
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, ('push constant 0\n'))
+
+        # null
+        term = Token('term', [Token('keyword', 'null')])
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, ('push constant 0\n'))
+
+        # true
+        term = Token('term', [Token('keyword', 'true')])
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, ('push constant 1\nneg\n'))
+
+    def test_compile_expression_parens(self):
+        term = Token('term', [
+            Token('symbol', '('), 
+            Token('term', [
+                Token('integerConstant', '2'), 
+            ]),
+            Token('symbol', ')'), 
+        ])
+
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression(term)
+
+        self.assertEqual(vm_code, (
+            'push constant 2\n'
+        ))
+
+    def test_compile_expression_unary_ops(self):
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'int',
+                'kind': 'argument',
+                'id': 0,
+            }
+        }
+        # not
+        term = Token('term', [
+            Token('symbol', '~'), 
+            Token('term', [Token('identifier', 'foo')])
+        ])
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push argument 0\n'
+            'not\n'
+        ))
+        # neg
+        term = Token('term', [
+            Token('symbol', '-'), 
+            Token('term', [Token('identifier', 'foo')])
+        ])
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push argument 0\n'
+            'neg\n'
+        ))
+
+    def test_compile_expression_expression_with_op(self):
+        term = Token('expression', [
+            Token('term', [Token('integerConstant', '1')]),
+            Token('symbol', '+'),
+            Token('term', [Token('integerConstant', '2')]),
+        ])
+
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression(term)
+
+        self.assertEqual(vm_code, (
+            'push constant 1\n'
+            'push constant 2\n'
+            'add\n'
+        ))
+
+    def test_compile_expression_expression_with_term(self):
+        term = Token('expression', [
+            Token('term', [Token('integerConstant', '1')]),
+        ])
+
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression(term)
+
+        self.assertEqual(vm_code, (
+            'push constant 1\n'
+        ))
+
+    def test_compile_expression_array_access(self):
+        term = Token('term', [
+            Token('identifier', 'foo'),
+            Token('symbol', '['),
+            Token('expression', [
+                Token('term', [Token('integerConstant', '12')]),
+            ]),
+            Token('symbol', ']'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'Array',
+                'kind': 'local',
+                'id': 0,
+            }
+        }
+        vm_code = generator.compile_expression(term)
+
+        self.assertEqual(vm_code, (
+            'push constant 12\n'
+            'push local 0\n'
+            'add\n'
+            'pop pointer 1\n'
+            'push that 0\n'
+        ))
+
+    def test_compile_expression_subroutine_self(self):
         pass
+    
+    def test_compile_expression_subroutine_other(self):
+        pass
+
+    def test_compile_expression_list_many(self):
+        expression_List = Token('expressionList', [
+            Token('expression', [
+                Token('term', [Token('integerConstant', '1')]),
+            ]),
+            Token('symbol', ','),
+            Token('expression', [
+                Token('term', [Token('integerConstant', '2')]),
+            ]),
+            Token('symbol', ','),
+            Token('expression', [
+                Token('term', [Token('integerConstant', '3')]),
+            ]),
+        ])
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression_list(expression_List)
+
+        self.assertEqual(vm_code, (
+            'push constant 1\n'
+            'push constant 2\n'
+            'push constant 3\n'
+        ))
+
+    def test_compile_expression_list_one(self):
+        expression_List = Token('expressionList', [
+            Token('expression', [
+                Token('term', [Token('integerConstant', '1')]),
+            ])
+        ])
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression_list(expression_List)
+
+        self.assertEqual(vm_code, (
+            'push constant 1\n'
+        ))
+
+    def test_compile_expression_list_none(self):
+        expression_List = Token('expressionList', [])
+        generator = CodeGenerator()
+        vm_code = generator.compile_expression_list(expression_List)
+        self.assertEqual(vm_code, '')
 
 
 class TestParser(TestCase):
