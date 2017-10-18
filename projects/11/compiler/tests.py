@@ -378,15 +378,188 @@ class TestCodeGenerator(TestCase):
             'pop temp 0\n'
         ))
 
-
     def test_compile_if_statement(self):
-        pass
+        statement = Token('ifStatement', [
+            Token('keyword', 'if'),
+            Token('symbol', '('),
+            Token('expression', [
+                Token('term', [Token('integerConstant', '3')]),
+                Token('symbol', '='),
+                Token('term', [Token('integerConstant', '3')]),
+            ]),
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('statements', [
+                Token('letStatement', [
+                    Token('keyword', 'let'),
+                    Token('identifier', 'foo'),
+                    Token('symbol', '='),
+                    Token('term', [Token('integerConstant', '22')]),
+                    Token('symbol', ';'),
+                ]),                
+            ]),
+            Token('symbol', '}'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'int',
+                'kind': 'local',
+                'id': 0,
+            },
+        }
+        vm_code = generator.compile_if(statement)
+        self.assertEqual(vm_code, (
+            'push constant 3\n'
+            'push constant 3\n'
+            'eq\n'
+            'if-goto L0\n'
+            'goto L1\n'
+            'label L0\n'
+            'push constant 22\n'
+            'pop local 0\n'
+            'goto L2\n'
+            'label L1\n'
+            'label L2\n'
+        ))
+
+    def test_compile_if_else_statement(self):
+        statement = Token('ifStatement', [
+            Token('keyword', 'if'),
+            Token('symbol', '('),
+            Token('expression', [
+                Token('term', [Token('integerConstant', '3')]),
+                Token('symbol', '='),
+                Token('term', [Token('integerConstant', '3')]),
+            ]),
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('statements', [
+                Token('letStatement', [
+                    Token('keyword', 'let'),
+                    Token('identifier', 'foo'),
+                    Token('symbol', '='),
+                    Token('term', [Token('integerConstant', '22')]),
+                    Token('symbol', ';'),
+                ]),                
+            ]),
+            Token('symbol', '}'),
+            Token('keyword', 'else'),
+            Token('symbol', '{'),
+            Token('statements', [
+                Token('letStatement', [
+                    Token('keyword', 'let'),
+                    Token('identifier', 'foo'),
+                    Token('symbol', '='),
+                    Token('term', [Token('integerConstant', '11')]),
+                    Token('symbol', ';'),
+                ]),                
+            ]),
+            Token('symbol', '}'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'int',
+                'kind': 'local',
+                'id': 0,
+            },
+        }
+        vm_code = generator.compile_if(statement)
+        self.assertEqual(vm_code, (
+            'push constant 3\n'
+            'push constant 3\n'
+            'eq\n'
+            'if-goto L0\n'
+            'goto L1\n'
+            'label L0\n'
+            'push constant 22\n'
+            'pop local 0\n'
+            'goto L2\n'
+            'label L1\n'
+            'push constant 11\n'
+            'pop local 0\n'
+            'label L2\n'
+        ))
 
     def test_compile_while_statement(self):
-        pass
+        statement = Token('whileStatement', [
+            Token('keyword', 'while'),
+            Token('symbol', '('),
+            Token('expression', [
+                Token('term', [Token('integerConstant', '3')]),
+                Token('symbol', '='),
+                Token('term', [Token('integerConstant', '3')]),
+            ]),
+            Token('symbol', ')'),
+            Token('symbol', '{'),
+            Token('statements', [
+                Token('letStatement', [
+                    Token('keyword', 'let'),
+                    Token('identifier', 'foo'),
+                    Token('symbol', '='),
+                    Token('term', [Token('integerConstant', '22')]),
+                    Token('symbol', ';'),
+                ]),                
+            ]),
+            Token('symbol', '}'),
+        ])
 
-    def test_compile_return_statement(self):
-        pass
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'int',
+                'kind': 'local',
+                'id': 0,
+            },
+        }
+        vm_code = generator.compile_while(statement)
+        self.assertEqual(vm_code, (
+            'label L0\n'
+            'push constant 3\n'
+            'push constant 3\n'
+            'eq\n'
+            'neg\n'
+            'if-goto L1\n'
+            'push constant 22\n'
+            'pop local 0\n'
+            'goto L0\n'
+            'label L1\n'
+        ))
+
+    def test_compile_return_statement_expression(self):
+        statement = Token('returnStatement', [
+            Token('keyword', 'return'),
+            Token('term', [Token('identifier', 'foo')]),
+            Token('symbol', ';'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'integerConstant',
+                'kind': 'argument',
+                'id': 1,
+            },
+        }
+        vm_code = generator.compile_return(statement)
+        self.assertEqual(vm_code, (
+            'push argument 1\n'
+            'return\n'
+        ))
+
+    def test_compile_return_statement_void(self):
+        statement = Token('returnStatement', [
+            Token('keyword', 'return'),
+            Token('symbol', ';'),
+        ])
+        generator = CodeGenerator()
+        vm_code = generator.compile_return(statement)
+        self.assertEqual(vm_code, (
+            'return\n'
+        ))
 
     def test_compile_expression_integer(self):
         term = Token('term', [
@@ -895,7 +1068,6 @@ class TestParser(TestCase):
         actual = parser.parse_subroutine_declaration()
         self.assertEqual(expected, actual)
 
-
     def test_parse_subroutine_body(self):
         """
         '{' varDec* statements '}' 
@@ -922,7 +1094,6 @@ class TestParser(TestCase):
         
         actual = parser.parse_subroutine_body()
         self.assertEqual(expected, actual)
-
 
     def test_parse_var_declaration(self):
         """
@@ -978,7 +1149,6 @@ class TestParser(TestCase):
         actual = parser.parse_parameter_list()
         self.assertEqual(expected, actual)
 
-
     def test_parse_parameter_list_empty(self):
         """
         ( (type identifier) (',' type identifier)*)?
@@ -991,7 +1161,6 @@ class TestParser(TestCase):
         
         actual = parser.parse_parameter_list()
         self.assertEqual(expected, actual)
-
 
     def test_parse_statements(self):
         """
@@ -1024,7 +1193,6 @@ class TestParser(TestCase):
         
         actual = parser.parse_statements()
         self.assertEqual(expected, actual)
-
 
     def test_parse_let_statement(self):
         """
@@ -1179,7 +1347,6 @@ class TestParser(TestCase):
         parser.parse_statements = self._mock_parse(parser)
         actual = parser.parse_while_statement()
         self.assertEqual(expected, actual)
-
 
     def test_parse_do_statement(self):
         """

@@ -22,7 +22,7 @@ def main(input_node):
 
     for filename in input_files:
         print 'Compiling {}'.format(filename)
-        output_filename = filename[:-4] + 'matt.vm'
+        output_filename = filename[:-4] + 'vm'
         with open(filename, 'r') as f:
             file_text = f.read()
         file_vm_text = compile(file_text)
@@ -32,7 +32,7 @@ def main(input_node):
 def compile(file_text):
     tokens = tokenize(file_text)
     parse_tree = Parser(tokens).parse_class()
-    vm_text = CodeGenerator(parse_tree).generate()
+    vm_text = CodeGenerator().compile_class(parse_tree)
     return vm_text
 
 

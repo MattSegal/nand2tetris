@@ -2,10 +2,13 @@
 Compiles a parse tree into Jack VM instructions
 """
 
+# TODO: Add debug logging
+
 class CodeGenerator(object):
     def __init__(self):
         self.class_symbols = {}
         self.subroutine_symbols = {}
+        self.label_count = 0
         self.class_name = None
 
     def compile_class(self, parse_tree):
@@ -127,11 +130,11 @@ class CodeGenerator(object):
 
     def compile_statements(self, statements):
         lookup = {
-            'letStatement': lambda x: compile_let(x),
-            'doStatement': lambda x: compile_do(x),
-            'ifStatement': lambda x: compile_if(x),
-            'whileStatement': lambda x: compile_while(x),
-            'returnStatement': lambda x: compile_return(x)
+            'letStatement': lambda x: self.compile_let(x),
+            'doStatement': lambda x: self.compile_do(x),
+            'ifStatement': lambda x: self.compile_if(x),
+            'whileStatement': lambda x: self.compile_while(x),
+            'returnStatement': lambda x: self.compile_return(x)
         }
         return ''.join([
             lookup[s.type](s) for s in statements
@@ -167,14 +170,65 @@ class CodeGenerator(object):
             'pop temp 0\n'  # Clear return value
         )
  
-    def compile_if(self):
+    def compile_if(self, parse_tree):
+        # 'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )? 
         assert parse_tree.type == 'ifStatement'
+        assert len(parse_tree) in (7, 11)
+        expression = self.compile_expression(parse_tree[2])
+        if_statements = self.compile_statements(parse_tree[5])
+        if len(parse_tree) == 11:
+            else_statements = self.compile_statements(parse_tree[9])
+        else:
+            else_statements = ''
+        return (
+            '{exp}'
+            'if-goto {if_label}\n'
+            'goto {else_label}\n'
+            'label {if_label}\n'
+            '{if_statements}'
+            'goto {end_label}\n'
+            'label {else_label}\n'
+            '{else_statements}'
+            'label {end_label}\n'
+        ).format(
+            exp=expression,
+            if_statements=if_statements,
+            else_statements=else_statements,
+            if_label=self._get_label(),
+            else_label=self._get_label(),
+            end_label=self._get_label(),
+        )
 
-    def compile_while(self):
+    def compile_while(self, parse_tree):
+        # 'while' '(' expression ')' '{' statements '}' 
         assert parse_tree.type == 'whileStatement'
+        assert len(parse_tree) == 7
+        expression = self.compile_expression(parse_tree[2])
+        statements = self.compile_statements(parse_tree[5])
+        return (
+            'label {loop_label}\n'
+            '{exp}'
+            'neg\n'
+            'if-goto {end_label}\n'
+            '{statements}'
+            'goto {loop_label}\n'
+            'label {end_label}\n'
+        ).format(
+            exp=expression,
+            statements=statements,
+            loop_label=self._get_label(),
+            end_label=self._get_label(),
+        )
 
-    def compile_return(self):
+    def compile_return(self, parse_tree):
+        # return expression? ;
+        # compile_subroutine handles void methods, just 'return' when no value specified
         assert parse_tree.type == 'returnStatement'
+        if parse_tree[1].type in ('expression', 'term'):
+            return_val = self.compile_expression(parse_tree[1])
+        else:
+            return_val = ''
+        return '{}return\n'.format(return_val)
 
     def compile_expression(self, parse_tree):
         assert parse_tree.type in ('expression', 'term')
@@ -347,6 +401,11 @@ class CodeGenerator(object):
             except KeyError:
                 raise GetVariableError
         return var
+
+    def _get_label(self):
+        label = 'L{}'.format(self.label_count)
+        self.label_count += 1
+        return label
 
 
 class GetVariableError(KeyError):
