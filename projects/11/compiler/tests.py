@@ -294,10 +294,90 @@ class TestCodeGenerator(TestCase):
         pass
 
     def test_compile_let_statement(self):
-        pass
+        statement = Token('letStatement', [
+            Token('keyword', 'let'),
+            Token('identifier', 'foo'),
+            Token('symbol', '='),
+            Token('term', [Token('integerConstant', '1')]),
+            Token('symbol', ';'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'integerConstant',
+                'kind': 'argument',
+                'id': 1,
+            },
+        }
+        vm_code = generator.compile_let(statement)
+        self.assertEqual(vm_code, (
+            'push constant 1\n'
+            'pop argument 1\n'
+        ))
+
+    def test_compile_let_statement_array(self):
+        statement = Token('letStatement', [
+            Token('keyword', 'let'),
+            Token('identifier', 'foo'),
+            Token('identifier', '['),
+            Token('term', [Token('integerConstant', '1')]),
+            Token('identifier', ']'),
+            Token('symbol', '='),
+            Token('term', [Token('integerConstant', '2')]),
+            Token('symbol', ';'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'foo': {
+                'type': 'integerConstant',
+                'kind': 'argument',
+                'id': 1,
+            },
+        }
+        vm_code = generator.compile_let(statement)
+        self.assertEqual(vm_code, (
+            'push argument 1\n'
+            'push constant 1\n'
+            'add\n'
+            'push constant 2\n'
+            'pop temp 0\n'
+            'pop pointer 1\n'
+            'push temp 0\n'
+            'pop that 0\n'
+        ))
 
     def test_compile_do_statement(self):
-        pass
+        # Class calling a function or constructor on a class
+        statement = Token('doStatement', [
+            Token('term', [
+                Token('identifier', 'String'),
+                Token('symbol', '.'),
+                Token('identifier', 'getWord'),
+                Token('symbol', '('),
+                Token('expressionList', [
+                    Token('term', [Token('integerConstant', '1')]),
+                ]),
+                Token('symbol', ')'),
+            ])
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'this': {
+                'type': 'BarClass',
+                'kind': 'argument',
+                'id': 0,
+            },
+        }
+        vm_code = generator.compile_do(statement)
+        self.assertEqual(vm_code, (
+            'push constant 1\n'
+            'call String.getWord 1\n'
+            'pop temp 0\n'
+        ))
+
 
     def test_compile_if_statement(self):
         pass
@@ -519,11 +599,100 @@ class TestCodeGenerator(TestCase):
             'push that 0\n'
         ))
 
-    def test_compile_expression_subroutine_self(self):
-        pass
+    def test_compile_expression_method_self(self):
+        # Class calling a method on itself
+        term = Token('term', [
+            Token('identifier', 'bar_method'),
+            Token('symbol', '('),
+            Token('expressionList', [
+                Token('term', [Token('integerConstant', '1')]),
+                Token('symbol', ','),
+                Token('term', [Token('integerConstant', '2')]),
+                Token('symbol', ','),
+                Token('term', [Token('integerConstant', '3')]),
+            ]),
+            Token('symbol', ')'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'this': {
+                'type': 'BarClass',
+                'kind': 'argument',
+                'id': 0,
+            }
+        }
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push argument 0\n'
+            'push constant 1\n'
+            'push constant 2\n'
+            'push constant 3\n'
+            'call BarClass.bar_method 4\n'
+        ))
     
-    def test_compile_expression_subroutine_other(self):
-        pass
+    def test_compile_expression_call_subroutine_var(self):
+        # Class calling a method on another class
+        term = Token('term', [
+            Token('identifier', 'foo_instance'),
+            Token('symbol', '.'),
+            Token('identifier', 'foo_method'),
+            Token('symbol', '('),
+            Token('expressionList', [
+                Token('term', [Token('integerConstant', '1')]),
+                Token('symbol', ','),
+                Token('term', [Token('integerConstant', '2')]),
+            ]),
+            Token('symbol', ')'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'this': {
+                'type': 'BarClass',
+                'kind': 'argument',
+                'id': 0,
+            },
+            'foo_instance': {
+                'type': 'FooClass',
+                'kind': 'local',
+                'id': 7,
+            }
+        }
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push local 7\n'
+            'push constant 1\n'
+            'push constant 2\n'
+            'call FooClass.foo_method 3\n'
+        ))
+
+    def test_compile_expression_call_subroutine_other(self):
+        # Class calling a function or constructor on a class
+        term = Token('term', [
+            Token('identifier', 'String'),
+            Token('symbol', '.'),
+            Token('identifier', 'getWord'),
+            Token('symbol', '('),
+            Token('expressionList', [
+                Token('term', [Token('integerConstant', '1')]),
+            ]),
+            Token('symbol', ')'),
+        ])
+
+        generator = CodeGenerator()
+        generator.subroutine_symbols = {
+            'this': {
+                'type': 'BarClass',
+                'kind': 'argument',
+                'id': 0,
+            },
+        }
+        vm_code = generator.compile_expression(term)
+        self.assertEqual(vm_code, (
+            'push constant 1\n'
+            'call String.getWord 1\n'
+        ))
 
     def test_compile_expression_list_many(self):
         expression_List = Token('expressionList', [

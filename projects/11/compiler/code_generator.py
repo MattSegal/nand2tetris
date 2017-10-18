@@ -126,27 +126,55 @@ class CodeGenerator(object):
         return obj_pointer_cmds + statements_cmds
 
     def compile_statements(self, statements):
-        pass
+        lookup = {
+            'letStatement': lambda x: compile_let(x),
+            'doStatement': lambda x: compile_do(x),
+            'ifStatement': lambda x: compile_if(x),
+            'whileStatement': lambda x: compile_while(x),
+            'returnStatement': lambda x: compile_return(x)
+        }
+        return ''.join([
+            lookup[s.type](s) for s in statements
+        ])
 
-    def compile_let(self):
-        pass
+    def compile_let(self, parse_tree):
+        # 'let' varName ('[' expression ']')? '=' expression ';'
+        assert parse_tree.type == 'letStatement'
+        assert parse_tree[0].value == 'let'
+        var = self._get_variable(parse_tree[1].value)
+        if parse_tree[2].value == '[':
+            indexExp = self.compile_expression(parse_tree[3])
+            valueExp = self.compile_expression(parse_tree[6])
+            return (
+                'push {kind} {id}\n'
+                '{indexExp}'
+                'add\n'
+                '{valueExp}'
+                'pop temp 0\n'
+                'pop pointer 1\n'
+                'push temp 0\n'
+                'pop that 0\n'
+            ).format(indexExp=indexExp, valueExp=valueExp, **var)
+        else:
+            valueExp = self.compile_expression(parse_tree[3])
+            return valueExp + (
+                'pop {kind} {id}\n'
+            ).format(**var)
 
     def compile_do(self, parse_tree):
-        # TODO: TEST ME
         assert parse_tree.type == 'doStatement'
-        return self.compile_subroutine_call(parse_tree.value) + (
-            # Clear return value
-            'pop temp 0\n'
+        return self.compile_expression(parse_tree.value[0]) + (
+            'pop temp 0\n'  # Clear return value
         )
  
     def compile_if(self):
-        pass
+        assert parse_tree.type == 'ifStatement'
 
     def compile_while(self):
-        pass
+        assert parse_tree.type == 'whileStatement'
 
     def compile_return(self):
-        pass
+        assert parse_tree.type == 'returnStatement'
 
     def compile_expression(self, parse_tree):
         assert parse_tree.type in ('expression', 'term')
@@ -259,18 +287,67 @@ class CodeGenerator(object):
         return symbol_ops[op_symbol.value]
 
     def compile_subroutine_call(self, parse_list):
-        pass
+        assert parse_list[0].type == 'identifier'
+        # Call on variable or class
+        if parse_list[1].value == '.':
+            # ( className | varName) '.' subroutineName '('expressionList ')'
+            assert parse_list[3].value == '(' and parse_list[5].value == ')'
+            try:
+                # Object method
+                obj = self._get_variable(parse_list[0].value)
+                class_name = obj['type']
+                push_pointer = 'push {kind} {id}\n'.format(**obj)
+                pointer_arg_count = 1
+            except GetVariableError:
+                # Function or constructor
+                class_name = parse_list[0].value
+                push_pointer = ''
+                pointer_arg_count = 0
+            subroutine_name = parse_list[2].value
+            expression_list = parse_list[4]
+            nargs = len(self.get_expression_list_terms(parse_list[4])) + pointer_arg_count
+            subroutine_call = 'call {}.{} {}\n'.format(class_name, subroutine_name, nargs)
+            return (
+                push_pointer + 
+                self.compile_expression_list(parse_list[4]) +
+                subroutine_call
+            )
+        # Call on private subroutine
+        else:
+            # subroutineName '(' expressionList ')'
+            assert parse_list[1].value == '(' and parse_list[3].value == ')'
+            this = self._get_variable('this')
+            subroutine_name = parse_list[0].value
+            nargs = len(self.get_expression_list_terms(parse_list[2])) + 1  # +1 for 'this'
+
+            push_pointer = 'push {kind} {id}\n'.format(**this)
+            subroutine_call = 'call {}.{} {}\n'.format(this['type'], subroutine_name, nargs) 
+            return (
+                push_pointer +
+                self.compile_expression_list(parse_list[2]) +
+                subroutine_call
+            )
+
+    def get_expression_list_terms(self, parse_tree):
+        assert parse_tree.type == 'expressionList'
+        return [t for t in parse_tree if t.type in ('expression', 'term')]
 
     def compile_expression_list(self, parse_tree):
-        assert parse_tree.type == 'expressionList'
         return ''.join([
-            self.compile_expression(t) for t in parse_tree 
-            if t.type == 'expression'
+            self.compile_expression(t) 
+            for t in self.get_expression_list_terms(parse_tree) 
         ])
 
     def _get_variable(self, name):
         try:
             var = self.subroutine_symbols[name]
         except KeyError:
-            var = self.class_symbols[name]
+            try:
+                var = self.class_symbols[name]
+            except KeyError:
+                raise GetVariableError
         return var
+
+
+class GetVariableError(KeyError):
+    pass
