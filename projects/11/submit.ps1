@@ -1,10 +1,11 @@
-$SUBMISSION_DIR = 'project10'
+$SUBMISSION_DIR = 'project11'
 $SUBMISSION_ITEMS = @(
-    './analyzer/constants.py',
-    './analyzer/jack_parser.py',
-    './analyzer/lang.txt',
-    './analyzer/JackAnalyzer.py',
-    './analyzer/tokenizer.py'
+    './compiler/constants.py',
+    './compiler/jack_parser.py',
+    './compiler/lang.txt',
+    './compiler/JackCompiler.py',
+    './compiler/tokenizer.py',
+    './compiler/code_generator.py'
 )
 
 New-Item -Type Directory $SUBMISSION_DIR -Force

@@ -93,8 +93,9 @@ class TestCodeGenerator(TestCase):
         }
         vm_code = generator.compile_subroutine(subroutine_tree)
         self.assertEqual(vm_code, (
+            'function None.new 0\n'
             'push constant 0\n'
-            'Memory.alloc 1\n'
+            'call Memory.alloc 1\n'
             'pop pointer 0\n'
         ))
 
@@ -133,8 +134,9 @@ class TestCodeGenerator(TestCase):
         }
         vm_code = generator.compile_subroutine(subroutine_tree)
         self.assertEqual(vm_code, (
+            'function None.new 0\n'
             'push constant 2\n'
-            'Memory.alloc 1\n'
+            'call Memory.alloc 1\n'
             'pop pointer 0\n'
         ))
 
@@ -171,7 +173,7 @@ class TestCodeGenerator(TestCase):
         generator.compile_statements = Mock(return_value='')
         vm_code = generator.compile_subroutine(subroutine_tree)
 
-        self.assertEqual(vm_code, '')
+        self.assertEqual(vm_code, 'function Foo.foo 3\n')
         self.assertEqual(generator.subroutine_symbols, {
             'foo': {
                 'type': 'int',
@@ -218,6 +220,7 @@ class TestCodeGenerator(TestCase):
         vm_code = generator.compile_subroutine(subroutine_tree)
 
         self.assertEqual(vm_code, (
+            'function Foo.foo 0\n'
             'push argument 0\n'
             'pop pointer 0\n'
         ))
@@ -256,6 +259,7 @@ class TestCodeGenerator(TestCase):
         vm_code = generator.compile_subroutine(subroutine_tree)
 
         self.assertEqual(vm_code, (
+            'function Foo.foo 0\n'
             'push argument 0\n'
             'pop pointer 0\n'
         ))
@@ -286,6 +290,7 @@ class TestCodeGenerator(TestCase):
         vm_code = generator.compile_subroutine(subroutine_tree)
 
         self.assertEqual(vm_code, (
+            'function Foo.foo 0\n'
             'push constant 0\n'
             'return\n'
         ))
@@ -351,16 +356,16 @@ class TestCodeGenerator(TestCase):
     def test_compile_do_statement(self):
         # Class calling a function or constructor on a class
         statement = Token('doStatement', [
-            Token('term', [
-                Token('identifier', 'String'),
-                Token('symbol', '.'),
-                Token('identifier', 'getWord'),
-                Token('symbol', '('),
-                Token('expressionList', [
-                    Token('term', [Token('integerConstant', '1')]),
-                ]),
-                Token('symbol', ')'),
-            ])
+            Token('keyword', 'do'),
+            Token('identifier', 'String'),
+            Token('symbol', '.'),
+            Token('identifier', 'getWord'),
+            Token('symbol', '('),
+            Token('expressionList', [
+                Token('term', [Token('integerConstant', '1')]),
+            ]),
+            Token('symbol', ')'),
+            Token('symbol', ';'),
         ])
 
         generator = CodeGenerator()
@@ -521,7 +526,7 @@ class TestCodeGenerator(TestCase):
             'push constant 3\n'
             'push constant 3\n'
             'eq\n'
-            'neg\n'
+            'not\n'
             'if-goto L1\n'
             'push constant 22\n'
             'pop local 0\n'
@@ -582,29 +587,20 @@ class TestCodeGenerator(TestCase):
         self.assertEqual(vm_code, (
             'push constant 7\n'
             'call String.new 1\n'
-            'push temp 0\n'
-            'pop temp 0\n'
             'push constant 104\n'
             'call String.appendChar 2\n'
-            'pop temp 0\n'
             'push constant 101\n'
             'call String.appendChar 2\n'
-            'pop temp 0\n'
             'push constant 121\n'
             'call String.appendChar 2\n'
-            'pop temp 0\n'
             'push constant 32\n'
             'call String.appendChar 2\n'
-            'pop temp 0\n'
             'push constant 104\n'
             'call String.appendChar 2\n'
-            'pop temp 0\n'
             'push constant 111\n'
             'call String.appendChar 2\n'
-            'pop temp 0\n'
             'push constant 46\n'
             'call String.appendChar 2\n'
-            'pop temp 0\n'
         ))
 
     def test_compile_expression_identifier_class(self):

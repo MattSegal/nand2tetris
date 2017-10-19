@@ -1,6 +1,12 @@
 """
 Compiles a parse tree into Jack VM instructions
 """
+import logging
+
+from tokenizer import Token
+
+logging.basicConfig(level=logging.ERROR)
+log = logging.getLogger(__name__)
 
 # TODO: Add debug logging
 
@@ -15,7 +21,7 @@ class CodeGenerator(object):
         assert parse_tree.has_children
         assert parse_tree[1].type == 'identifier'
         self.class_name = parse_tree[1].value
-        print 'Parsing class {}'.format(self.class_name)
+        log.info('Compiling class %s', self.class_name)
 
         var_counts = {
             'static': 0,
@@ -46,7 +52,7 @@ class CodeGenerator(object):
         subroutine_type = parse_tree[0].value
         is_void = parse_tree[1].value == 'void'
         subroutine_name = parse_tree[2].value
-        print 'Parsing {}.{}'.format(self.class_name, subroutine_name)
+        log.info('Compiling subroutine %s.%s', self.class_name, subroutine_name)
 
         parameter_list = next(t for t in parse_tree if t.type == 'parameterList')
         body = next(t for t in parse_tree if t.type == 'subroutineBody')
@@ -57,7 +63,7 @@ class CodeGenerator(object):
 
         # Subroutine arguments
         arg_count = 0
-        if subroutine_type == 'method':
+        if subroutine_type in ('method', 'constructor'):
             self.subroutine_symbols['this'] = {
                 'type': self.class_name,
                 'kind': 'argument',
@@ -105,7 +111,7 @@ class CodeGenerator(object):
             )
             obj_pointer_cmds = (
                 'push constant {}\n'    # Push number of arguments
-                'Memory.alloc 1\n'      # Allocate memory for object
+                'call Memory.alloc 1\n'      # Allocate memory for object
                 'pop pointer 0\n'       # Set THIS as allocated memory block
             ).format(num_fields)
         elif subroutine_type == 'method':
@@ -125,8 +131,16 @@ class CodeGenerator(object):
                 'push constant 0\nreturn\n'
             )
 
+        function_declaration = 'function {}.{} {}\n'.format(
+            self.class_name, subroutine_name, var_count
+        )
+
         # Make sure we handle void return types here later
-        return obj_pointer_cmds + statements_cmds
+        return (
+            function_declaration +
+            obj_pointer_cmds +
+            statements_cmds
+        )
 
     def compile_statements(self, statements):
         lookup = {
@@ -148,8 +162,7 @@ class CodeGenerator(object):
         if parse_tree[2].value == '[':
             indexExp = self.compile_expression(parse_tree[3])
             valueExp = self.compile_expression(parse_tree[6])
-            return (
-                'push {kind} {id}\n'
+            return self.get_variable_push(var) + (
                 '{indexExp}'
                 'add\n'
                 '{valueExp}'
@@ -157,16 +170,16 @@ class CodeGenerator(object):
                 'pop pointer 1\n'
                 'push temp 0\n'
                 'pop that 0\n'
-            ).format(indexExp=indexExp, valueExp=valueExp, **var)
+            ).format(indexExp=indexExp, valueExp=valueExp)
         else:
             valueExp = self.compile_expression(parse_tree[3])
-            return valueExp + (
-                'pop {kind} {id}\n'
-            ).format(**var)
+            return valueExp + self.get_variable_pop(var)
 
     def compile_do(self, parse_tree):
+        log.info('Compiling do statement')
         assert parse_tree.type == 'doStatement'
-        return self.compile_expression(parse_tree.value[0]) + (
+        subroutine_term = Token('term', parse_tree.value[1:-1])
+        return self.compile_expression(subroutine_term) + (
             'pop temp 0\n'  # Clear return value
         )
  
@@ -208,7 +221,7 @@ class CodeGenerator(object):
         return (
             'label {loop_label}\n'
             '{exp}'
-            'neg\n'
+            'not\n'
             'if-goto {end_label}\n'
             '{statements}'
             'goto {loop_label}\n'
@@ -247,24 +260,20 @@ class CodeGenerator(object):
                     # Create a new string obj, reserve THIS in temp
                     'push constant {}\n'
                     'call String.new 1\n'
-                    'push temp 0\n'
                 ).format(len(string)) + ''.join([
                     (
                         # Append each character to the string
-                        'pop temp 0\n'
                         'push constant {}\n'
                         'call String.appendChar 2\n'
                     ).format(ord(c)) for c in string 
-                ]) + (
-                    'pop temp 0\n'
-                )
+                ])
             elif terms[0].type == 'keyword':
                 # Keyword constants 'true' | 'false' | 'null' | 'this' 
                 assert len(terms) == 1
                 keyword = terms[0].value
                 if keyword == 'this':
                     variable = self._get_variable(keyword)
-                    return 'push {kind} {id}\n'.format(**variable)
+                    return self.get_variable_push(variable)
                 elif keyword in ('null', 'false'):
                     return 'push constant 0\n'
                 elif keyword == 'true':
@@ -273,14 +282,17 @@ class CodeGenerator(object):
                     raise ValueError('{} is not a valid keyword'.format(terms[0]))
             elif len(terms) > 3 and terms[0].type == 'identifier' and  terms[1].value == '[':
                 # Array access varName [ ex ]
+                # TODO: if the array is a class field we need to get it
                 assert terms[2].type == 'expression'
                 variable = self._get_variable(terms[0].value)
-                return self.compile_expression(terms[2]) + (
-                    'push {kind} {id}\n'
-                    'add\n'
-                    'pop pointer 1\n'
-                    'push that 0\n'
-                ).format(**variable)
+                return (
+                    self.compile_expression(terms[2]) +
+                    self.get_variable_push(variable) + (
+                        'add\n'
+                        'pop pointer 1\n'
+                        'push that 0\n'
+                    )
+                )
                
             elif (
                 len(terms) > 3 and (
@@ -299,9 +311,10 @@ class CodeGenerator(object):
                 return self.compile_expression(terms[1]) + self.compile_unary_op(terms[0]) 
             elif terms[0].type == 'identifier':
                 # Variables
+                # TODO: if the variable is a class field we need to get it
                 assert len(terms) == 1
                 variable = self._get_variable(terms[0].value)
-                return 'push {kind} {id}\n'.format(**variable)
+                return self.get_variable_push(variable)
             else:
                 raise ValueError('{} is not a valid term'.format(parse_tree))
         elif parse_tree.type == 'expression':
@@ -317,6 +330,24 @@ class CodeGenerator(object):
             else:
                 raise ValueError('{} is not a valid expression'.format(parse_tree)) 
 
+    def get_variable_push(self, var):
+        # Var is a dict from one of the symbol tables
+        if var['kind'] == 'field':
+            # Variable is a class field, assume 'this' is set
+            return 'push this {id}\n'.format(**var)
+        else:
+            # Any other variable kind
+            return 'push {kind} {id}\n'.format(**var)
+
+    def get_variable_pop(self, var):
+         # Var is a dict from one of the symbol tables
+        if var['kind'] == 'field':
+            # Variable is a class field, assume 'this' is set
+            return 'pop this {id}\n'.format(**var)
+        else:
+            # Any other variable kind
+            return 'pop {kind} {id}\n'.format(**var)
+
     def compile_unary_op(self, op_symbol):
         assert op_symbol.type == 'symbol'
         symbol_ops = {
@@ -330,8 +361,8 @@ class CodeGenerator(object):
         symbol_ops = {
             '+': 'add\n',
             '-': 'sub\n',
-            '*': 'call Math.multiply\n',
-            '/': 'call Math.divide\n',
+            '*': 'call Math.multiply 2\n',
+            '/': 'call Math.divide 2\n',
             '&': 'and\n',
             '|': 'or\n',
             '>': 'gt\n',
@@ -341,6 +372,7 @@ class CodeGenerator(object):
         return symbol_ops[op_symbol.value]
 
     def compile_subroutine_call(self, parse_list):
+        log.info('Compiling subroutine call')
         assert parse_list[0].type == 'identifier'
         # Call on variable or class
         if parse_list[1].value == '.':
@@ -350,7 +382,7 @@ class CodeGenerator(object):
                 # Object method
                 obj = self._get_variable(parse_list[0].value)
                 class_name = obj['type']
-                push_pointer = 'push {kind} {id}\n'.format(**obj)
+                push_pointer = self.get_variable_push(obj)
                 pointer_arg_count = 1
             except GetVariableError:
                 # Function or constructor
@@ -374,7 +406,7 @@ class CodeGenerator(object):
             subroutine_name = parse_list[0].value
             nargs = len(self.get_expression_list_terms(parse_list[2])) + 1  # +1 for 'this'
 
-            push_pointer = 'push {kind} {id}\n'.format(**this)
+            push_pointer = self.get_variable_push(this)
             subroutine_call = 'call {}.{} {}\n'.format(this['type'], subroutine_name, nargs) 
             return (
                 push_pointer +
