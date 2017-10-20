@@ -63,13 +63,21 @@ class CodeGenerator(object):
 
         # Subroutine arguments
         arg_count = 0
-        if subroutine_type in ('method', 'constructor'):
+        if subroutine_type == 'method':
             self.subroutine_symbols['this'] = {
                 'type': self.class_name,
                 'kind': 'argument',
                 'id': arg_count / 2,
             }
             arg_count += 2
+        elif subroutine_type == 'constructor':
+            # A bit of a hack to get this into the symbol table
+            # for access in the constructor body
+            self.subroutine_symbols['this'] = {
+                'type': self.class_name,
+                'kind': 'pointer',
+                'id': 0,
+            }
 
         arg_type = None
         for t in parameter_list:
@@ -235,11 +243,14 @@ class CodeGenerator(object):
 
     def compile_return(self, parse_tree):
         # return expression? ;
-        # compile_subroutine handles void methods, just 'return' when no value specified
+        
         assert parse_tree.type == 'returnStatement'
         if parse_tree[1].type in ('expression', 'term'):
+            # Any other expression
             return_val = self.compile_expression(parse_tree[1])
         else:
+            # No return value 
+            # compile_subroutine handles void methods
             return_val = ''
         return '{}return\n'.format(return_val)
 

@@ -2,28 +2,28 @@ function Ball.new 0
 push constant 15
 call Memory.alloc 1
 pop pointer 0
-push argument 1
+push argument 0
 pop this 0
-push argument 2
+push argument 1
 pop this 1
-push argument 3
+push argument 2
 pop this 10
-push argument 4
+push argument 3
 push constant 6
 sub
 pop this 11
-push argument 5
+push argument 4
 pop this 12
-push argument 6
+push argument 5
 push constant 6
 sub
 pop this 13
 push constant 0
 pop this 14
-push argument 0
+push pointer 0
 call Ball.show 1
 pop temp 0
-push argument 0
+push pointer 0
 return
 function Ball.dispose 0
 push argument 0
