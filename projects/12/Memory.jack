@@ -9,26 +9,84 @@
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
 class Memory {
+    static Array ram;
+    static Array heap;
 
     /** Initializes the class. */
     function void init() {
+        let ram = 0;            // Point RAM array to memory address 0
+        let heap = 2048;        // Heap base address
+        let heap[0] = 0;        // next
+        let heap[1] = 14335;    // size
+        return;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
+        var int ptr, prev, remaining_size, addr;
+        var boolean found;
+        let ptr = 0;
+        let prev = 0;
+        let found = false;
+
+        while (~found) {
+            // Search heap for first segment that fits
+            // The node must accomodate the size plus next and size
+            let remaining_size = heap[ptr + 1] - (size + 2)
+            if (remaining_size > -1) {
+                // If the node is too small for further use
+                if (remaining_size < 3) {
+                    // Just remove the whole node from the list
+                    let heap[prev] = heap[ptr];
+                    let heap[ptr] = 0;
+                    let addr = prt + 2;
+
+                } else {
+                    // Adjust size of current node
+                    let heap[ptr + 1] = remaining_size;
+                    // Setup new node for when it is deallocated
+                    let ptr = ptr + remaining_size + 2;
+                    let heap[ptr] = 0;
+                    let heap[ptr + 1] = size
+                    let addr = ptr + 2;
+                }
+                let found = true;
+            } else {
+                // Check the next node
+                let prev = ptr;
+                let ptr = heap[ptr];
+                if (ptr = 0) {
+                    // Null pointer - end of list
+                    Sys.error(1);
+                }
+            }
+        }
+        return addr;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
+        let int ptr, next;
+        let ptr = 0;
+        let next = heap[ptr];
+        while (~(next = 0)) {
+            let ptr = next;
+            let next = heap[ptr];
+        }
+        let heap[ptr] = o - 2;
+        return;
     }    
 }

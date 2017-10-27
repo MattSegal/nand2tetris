@@ -9,12 +9,98 @@
  */
 class Math {
 
+    static Array twoToThe;
+
     /** Initializes the library. */
     function void init() {
+        let twoToThe = Array.new(16);
+        let twoToThe[0] = 1;            // 0000000000000001
+        let twoToThe[1] = 2;            // 0000000000000010
+        let twoToThe[2] = 4;            // 0000000000000100
+        let twoToThe[3] = 8;            // 0000000000001000
+        let twoToThe[4] = 16;           // 0000000000010000
+        let twoToThe[5] = 32;           // 0000000000100000
+        let twoToThe[6] = 64;           // 0000000001000000
+        let twoToThe[7] = 128;          // 0000000010000000
+        let twoToThe[8] = 256;          // 0000000100000000
+        let twoToThe[9] = 512;          // 0000001000000000
+        let twoToThe[10] = 1024;        // 0000010000000000
+        let twoToThe[11] = 2048;        // 0000100000000000
+        let twoToThe[12] = 4096;        // 0001000000000000
+        let twoToThe[13] = 8192;        // 0010000000000000
+        let twoToThe[14] = 16384;       // 0100000000000000 - biggest power of 2 possible (biggest int is 32767)
+        let twoToThe[15] = 32767;       // hack - not actually a power of 2
+       
+        // 1000000000000000 -32768
+        // 1100000000000000 -16384
+        // 1110000000000000 -8192
+        // 1111000000000000 -4096
+        // 1111100000000000 -2048
+        // 1111110000000000 -1024
+        // 1111111000000000 -512
+        // 1111111100000000 -256
+        // 1111111110000000 -128
+        // 1111111111000000 -64
+        // 1111111111100000 -32
+        // 1111111111110000 -16
+        // 1111111111111000 -8
+        // 1111111111111001 -7
+        // 1111111111111010 -6
+        // 1111111111111011 -5
+        // 1111111111111100 -4
+        // 1111111111111101 -3
+        // 1111111111111110 -2
+        // 1111111111111111 -1
+        return;
+    }
+
+    /** Returns true if the ith bit of x is 1, false otherwise **/
+    function boolean bit(int x, int i) {
+        var boolean is_bit;
+        if (x < 0) {
+            let x = -(x + 1);
+            let is_bit = ~(Math.positive_bit(x, i));
+        } else {
+            let is_bit = Math.positive_bit(x, i);            
+        }
+        return is_bit;
+    }
+
+    function boolean positive_bit(int x, int i) {
+        var boolean is_bit, is_current_bit;
+        var int idx, amount;
+        let is_bit = false;
+
+        if (x < twoToThe[i]) {
+            // Bit can never be 1, so skip
+        } else {
+            let idx = 14;
+            let amount = x;
+            while (~(idx < 0)) {
+                let is_current_bit = (amount > (twoToThe[idx] - 1));
+                if (idx = i) {
+                    let is_bit = is_current_bit;
+                    let idx = -1; // break
+                } else {
+                    if (is_current_bit) {
+                        let amount = amount - twoToThe[idx];
+                    }
+                    let idx = idx - 1;
+                }
+            }
+        }
+        return is_bit;
     }
 
     /** Returns the absolute value of x. */
     function int abs(int x) {
+        var int val;
+        if (x < 0) {
+            let val = -x;
+        } else {
+            let val = x;
+        }
+        return val;
     }
 
     /** Returns the product of x and y. 
@@ -23,6 +109,19 @@ class Math {
      *  the Jack expressions x*y and multiply(x,y) return the same value.
      */
     function int multiply(int x, int y) {
+        var int sum, shift, idx;
+        let idx = 0;
+        let sum = 0;
+        let shift = x;
+        while (idx < 16) {
+            if (Math.bit(y, idx)) {
+                let sum = sum + shift; 
+            } else {
+            }
+            let shift = shift + shift;
+            let idx = idx + 1;
+        }
+        return sum;
     }
 
     /** Returns the integer part of x/y.
@@ -31,17 +130,90 @@ class Math {
      *  the Jack expressions x/y and divide(x,y) return the same value.
      */
     function int divide(int x, int y) {
+        var int sign;
+        if (
+            ((x < 0) & (y > 0)) |
+            ((x > 0) & (y < 0))
+        ) {
+            let sign = -1;
+        } else {
+            let sign = 1;
+        }
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+        return sign * Math.positive_divide(x, y);
+    }
+
+    // Positive divide
+    function int positive_divide(int x, int y) {
+        var int q;
+        if ((y > x) | (y < 0)) {
+            return 0;
+        }
+        let q = Math.divide(x, 2 * y);
+        if ( (x - (2 * q * y)) < y) {
+            return 2 * q;
+        } else {
+            return (2 * q) + 1;
+        }
     }
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
+        var int square_root, exp, jump, high, square;
+        
+        // Find the smallest exp : x < 2^exp
+        let exp = 0;
+        while ((x > twoToThe[exp]) & (exp < 14)) {
+            let exp = exp + 1;
+        }
+                
+        let square_root = 0;
+        let jump = exp / 2;
+        
+        // Loop from jump down to 0
+        while (jump > -1) {
+            let high = square_root + twoToThe[jump];
+            let square = high * high;
+            if (((square < x) | (square = x)) & (square > 0)) {
+                let square_root = high;
+            }
+            let jump = jump - 1;
+        }
+        return square_root;
+    }
+
+    /** Returns x to the power of y **/
+    function int power(int x, int y) {
+        var int p, idx;
+        let p = 1;
+        let idx = 0;
+        while (idx < y) {
+            let p = p * x;
+            let idx = idx + 1;
+        }
+        return p;
     }
 
     /** Returns the greater number. */
     function int max(int a, int b) {
+        var int val;
+        if (a > b) {
+            let val = a;
+        } else {
+            let val = b;
+        }
+        return val;
     }
 
     /** Returns the smaller number. */
     function int min(int a, int b) {
+        var int val;
+        if (a < b) {
+            let val = a;
+        } else {
+            let val = b;
+        }
+        return val;
     }
 }
