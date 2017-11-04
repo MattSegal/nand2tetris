@@ -10,18 +10,49 @@ class Sys {
 
     /** Performs all the initializations required by the OS. */
     function void init() {
+        do Memory.init();
+        do Output.init();
+        do Keyboard.init();
+        do Math.init();
+        do Screen.init();
+        do Main.main();
+        do Sys.halt();
+        return;
     }
 
     /** Halts the program execution. */
     function void halt() {
+        while (true) {
+            // loop for ever
+        }
+        return;
     }
 
-    /** Waits approximately duration milliseconds and returns.  */
+    /** Waits approximately duration milliseconds and returns.  
+    *   Max duration val of 160s
+    */
     function void wait(int duration) {
+        var int count, sub_count, delay;
+        let delay = duration / 10;
+        let count = 0;
+        let sub_count = 0;
+        while (count < delay) {
+            let sub_count = 0;
+            while (sub_count < delay) {
+                let sub_count = sub_count + 1;
+            }
+            let count = count + 1;
+        }
+        return;
     }
 
     /** Displays the given error code in the form "ERR<errorCode>",
      *  and halts the program's execution. */
     function void error(int errorCode) {
+        do Output.printString("ERR<");
+        do Output.printInt(errorCode);
+        do Output.printString(">");
+        do Sys.halt();
+        return;
     }
 }

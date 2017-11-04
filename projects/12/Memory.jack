@@ -44,14 +44,14 @@ class Memory {
         while (~found) {
             // Search heap for first segment that fits
             // The node must accomodate the size plus next and size
-            let remaining_size = heap[ptr + 1] - (size + 2)
+            let remaining_size = heap[ptr + 1] - (size + 2);
             if (remaining_size > -1) {
                 // If the node is too small for further use
                 if (remaining_size < 3) {
                     // Just remove the whole node from the list
                     let heap[prev] = heap[ptr];
                     let heap[ptr] = 0;
-                    let addr = prt + 2;
+                    let addr = ptr + 2;
 
                 } else {
                     // Adjust size of current node
@@ -59,7 +59,7 @@ class Memory {
                     // Setup new node for when it is deallocated
                     let ptr = ptr + remaining_size + 2;
                     let heap[ptr] = 0;
-                    let heap[ptr + 1] = size
+                    let heap[ptr + 1] = size;
                     let addr = ptr + 2;
                 }
                 let found = true;
@@ -69,7 +69,7 @@ class Memory {
                 let ptr = heap[ptr];
                 if (ptr = 0) {
                     // Null pointer - end of list
-                    Sys.error(1);
+                    do Sys.error(1);
                 }
             }
         }
@@ -79,7 +79,7 @@ class Memory {
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
-        let int ptr, next;
+        var int ptr, next;
         let ptr = 0;
         let next = heap[ptr];
         while (~(next = 0)) {
