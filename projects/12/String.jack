@@ -12,53 +12,130 @@
  */
 class String {
 
+    field int i, len;
+    field Array str;
+
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
     constructor String new(int maxLength) {
+        let i = 0;
+        let len = maxLength;
+        if (len > 0) {
+            let str = Array.new(maxLength);            
+        }
+        return this;
     }
 
     /** Disposes this string. */
     method void dispose() {
+        if (len > 0) {
+            do str.dispose();
+        }
+        do Memory.deAlloc(this);
+        return;
     }
 
     /** Returns the current length of this string. */
     method int length() {
+        return i;
     }
 
     /** Returns the character at the j-th location of this string. */
     method char charAt(int j) {
+        return str[j];
     }
 
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
+        let str[j] = c;
+        return;
     }
 
     /** Appends c to this string's end and returns this string. */
     method String appendChar(char c) {
+        let str[i] = c;
+        let i = i + 1;
+        return this;
     }
 
     /** Erases the last character from this string. */
     method void eraseLastChar() {
+        if (i > 0) {
+            let i = i - 1;
+        }
+        return;
     }
 
     /** Returns the integer value of this string, 
      *  until a non-digit character is detected. */
     method int intValue() {
+        var boolean is_negative;
+        var int num, idx, c;
+        let num = 0;
+        let idx = 0;
+        while (idx < len) {
+            let c = charAt(idx);
+            if ((idx = 0) & (c = 45)) {
+                let is_negative = true;
+                let idx = idx + 1;
+            } else {
+                if ((c < 58) & (c > 47)) {
+                    let num = (10 * num ) + (c - 48);
+                    let idx = idx + 1;
+                } else {
+                    let idx = len;
+                }
+            }
+        } 
+        if (is_negative) {
+            let num = -num;
+        }
+        return num;    
     }
 
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
+        var int digit, idx, temp;
+        var boolean is_negative;
+        
+        if (val < 0) {
+            let is_negative = true;
+            let val = -val;
+        }
+
+        let i = 0;
+        while (val > 0) {
+            let digit = (val - (10 * (val / 10)));
+            do appendChar(digit + 48);
+            let val = val / 10;
+        }
+        if (is_negative) {
+            do appendChar(45);
+        }
+        
+        // Reverse the string
+        let idx = 0;
+        while (idx < ((i / 2) + 1)) {
+            let temp = str[idx];
+            let str[idx] = str[i - 1 - idx];
+            let str[i - 1 - idx] = temp;
+            let idx = idx + 1;
+        }
+        return;
     }
 
     /** Returns the new line character. */
     function char newLine() {
+        return 128;
     }
 
     /** Returns the backspace character. */
     function char backSpace() {
+        return 129;
     }
 
     /** Returns the double quote (") character. */
     function char doubleQuote() {
+        return 34;
     }
 }

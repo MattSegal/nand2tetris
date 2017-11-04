@@ -8,8 +8,12 @@
  */
 class Keyboard {
 
+    static int KEYBOARD_ADDR;
+
     /** Initializes the keyboard. */
     function void init() {
+        let KEYBOARD_ADDR = 24576;
+        return;
     } 
 
     /**
@@ -33,6 +37,7 @@ class Keyboard {
      * F1 - F12 = 141 - 152
      */
     function char keyPressed() {
+        return Memory.peek(KEYBOARD_ADDR);
     }
 
     /**								
@@ -41,14 +46,62 @@ class Keyboard {
      * of the pressed key.
      */
     function char readChar() {
+        var boolean loop;
+        var int key;
+        let loop = true;
+        let key = 0;
+        while (loop) {
+            if (key = 0) {
+                let key = Keyboard.keyPressed();                
+            } else {
+                if (Keyboard.keyPressed() = 0) {
+                    let loop = false;
+                }
+            }
+        }
+        if (~((key = 129) | (key = 128))) {
+            do Output.printChar(key);
+        }
+        return key;
     }
-
+ 
     /**								
      * Displays the message on the screen, reads from the keyboard the entered
      * text until a newline character is detected, echoes the text to the screen,
      * and returns its value. Also handles user backspaces.
      */
     function String readLine(String message) {
+        var boolean loop;
+        var String line;
+        var int idx, key;
+
+        let loop = true;
+        let idx = 0;
+        let line = String.new(256);
+
+        do Output.printString(message);
+
+        while (loop & (idx < 256)) {
+            let key = Keyboard.readChar();
+            // Exit if newline
+            if (key = 128) {
+                let loop = false;
+            } else {
+                // Remove backspace
+                if (key = 129) {
+                    if (idx > 0) {
+                        do line.eraseLastChar();
+                        do Output.backSpace();
+                        let idx = idx - 1;
+                    }
+                } else {
+                    do line.appendChar(key);
+                    let idx = idx + 1;
+                }
+            }
+        }
+        do Output.println();
+        return line;
     }   
 
     /**								
@@ -58,5 +111,54 @@ class Keyboard {
      * entered text is detected). Also handles user backspaces. 
      */
     function int readInt(String message) {
+        var boolean loop, is_int, is_negative;
+        var int num, key, idx;
+        let loop = true;
+        let is_int = true;
+        let is_negative = false;
+        let num = 0;
+        let idx = 0;
+
+        do Output.printString(message);
+
+        while (loop) {
+            let key = Keyboard.readChar();
+            
+            // Handle negative numbers
+            if ((idx = 0) & (key = 45)) {
+                let is_negative = true;
+                let idx = idx + 1;
+            } else {
+                // Exit if newline
+                if ((~is_int) | (key = 128)) {
+                    let loop = false;
+                } else {
+                    // Remove backspace
+                    if (key = 129) {
+                        if (idx = 1) {
+                            let is_negative = false;
+                        }
+                        if (idx > 0) {
+                            do Output.backSpace();
+                            let num = num / 10;
+                            let idx = idx - 1;
+                        }
+                    } else {
+                        // Regular key
+                        if ((key > 47) & (key < 58)) {
+                            let num = 10 * num + (key - 48);
+                        } else {
+                            let is_int = false;
+                        }
+                        let idx = idx + 1;
+                    }
+                }
+            }
+        }
+        if (is_negative) {
+            let num = -num;
+        }
+        do Output.println();
+        return num;
     }
 }

@@ -15,12 +15,26 @@
  * as a small filled square, indicates where the next character will be displayed.
  */
 class Output {
+    // Screen is 23 rows of 64 characters
+    // character is 11px high and 8px wide
 
     // Character map for displaying characters
-    static Array charMaps; 
+    static Array charMaps;
+    static int cursor_i;
+    static int cursor_j;
+    static int NUM_ROWS;
+    static int NUM_COLS;
+    static int SCREEN_BASE;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        let cursor_j = 0;
+        let cursor_i = 0;
+        let NUM_ROWS = 23;
+        let NUM_COLS = 64;
+        let SCREEN_BASE = 16384;
+        do Output.initMap();
+        return;
     }
 
     // Initializes the character map array
@@ -71,7 +85,7 @@ class Output {
         do Output.create(64,30,51,51,59,59,59,27,3,30,0,0);  // @
         do Output.create(63,30,51,51,24,12,12,0,12,12,0,0);  // ?
 
-        do Output.create(65,0,0,0,0,0,0,0,0,0,0,0);          // A ** TO BE FILLED **
+        do Output.create(65,30,63,51,51,51,63,51,51,51,0,0); // A
         do Output.create(66,31,51,51,51,31,51,51,51,31,0,0); // B
         do Output.create(67,28,54,35,3,3,3,35,54,28,0,0);    // C
         do Output.create(68,15,27,51,51,51,51,51,27,15,0,0); // D
@@ -137,15 +151,14 @@ class Output {
         do Output.create(125,7,12,12,12,56,12,12,12,7,0,0);    // }
         do Output.create(126,38,45,25,0,0,0,0,0,0,0,0);        // ~
 
-	return;
+        return;
     }
 
     // Creates the character map array of the given character index, using the given values.
-    function void create(int index, int a, int b, int c, int d, int e,
-                         int f, int g, int h, int i, int j, int k) {
-	var Array map;
+    function void create(int index, int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k) {
+        var Array map;
 
-	let map = Array.new(11);
+        let map = Array.new(11);
         let charMaps[index] = map;
 
         let map[0] = a;
@@ -176,28 +189,152 @@ class Output {
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        var int idx;
+        let cursor_i = i;
+        let cursor_j = j;
+
+        // Write a blank character
+        let idx = 0;
+        while (idx < 9) {
+            do Output.writeRow(idx, 0);
+            let idx = idx + 1;
+        }
+        return;
     }
 
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
+        var Array charMap;
+        var int idx, row_bitmap, word, addr;
+
+        // Print character
+        let charMap = Output.getMap(c);
+        let idx = 0;
+        while (idx < 9) {
+            // Get the 1st 6 bits then pad right with 2 0s
+            // eg 29 is 011101 then row will be 01110100
+            // which is equivalent of x4 multiply
+            let row_bitmap = charMap[idx] * 4;
+            do Output.writeRow(idx, row_bitmap);
+            let idx = idx + 1;
+        }
+        do Output.advanceCursor();
+        return;
+    }
+
+    function void advanceCursor() {
+        let cursor_j = cursor_j + 1;
+        if (cursor_j = (NUM_COLS-1)) {
+            let cursor_j = 0;
+            let cursor_i = cursor_i + 1;
+            if (cursor_i = (NUM_ROWS-1)) {
+                let cursor_i = 0;
+            }
+        }
+        do Output.moveCursor(cursor_i, cursor_j);
+        return;
+    }
+
+    function void writeRow(int char_row, int row_bitmap) {
+        var int word, addr;
+        let addr = Output.getRowAddress(char_row);
+        let word = Memory.peek(addr);
+        if ((cursor_j & 1) = 1) {
+            // Odd number column so 8 width bitmap should
+            // be on the right side of the word
+            // 255 is 0000000011111111
+            // 256 is 0000000100000000
+             let word = (256 * row_bitmap) | (word & 255);
+ 
+        } else {
+            // Even number column so 8 width bitmap should
+            // be on the left side of the word
+            // -256 is 1111111100000000
+            let word = row_bitmap | (word & (-256));
+        }
+        do Memory.poke(addr, word);
+        return;
+    }
+
+    function int getRowAddress(int char_row) {
+        // Get the address of word at (cursor_i, cursor_j, char_row)
+        // for char_row 0 to 10
+        // Each row is 32 words across plus 11 px high - use 352 * cursor_i
+        // Each column is 1/2 a word across - use cursor_j / 2
+        // Each char_row is an additional px row - which is 32 words across - use 32 * char_row
+        return SCREEN_BASE + 
+            (352 * cursor_i) + 
+            (cursor_j / 2) + 
+            (32 * char_row);
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int length, idx;
+        let length = s.length();
+        let idx = 0;
+        while (idx < length) {
+            do Output.printChar(s.charAt(idx));
+            let idx = idx + 1;
+        }
+        return;
     }
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
+        if (i < 0) {
+            do Output.printChar(45);
+            let i = -i;
+        }
+        if (i > 9999) {
+            do Output.printChar(48 + (i / 10000));
+            let  i = i - (10000 * (i / 10000));
+        }
+        if (i > 999) {
+            do Output.printChar(48 + (i / 1000));
+            let  i = i - (1000 * (i / 1000));
+
+        }
+        if (i > 99) {
+            do Output.printChar(48 + (i / 100));
+            let  i = i - (100 * (i / 100));
+
+        }
+        if (i > 9) {
+            do Output.printChar(48 + (i / 10));
+            let  i = i - (10 * (i / 10));
+
+        }
+        // handle last digit
+        do Output.printChar(48 + i);
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        let cursor_j = 0;
+        let cursor_i = cursor_i + 1;
+        if (cursor_i = (NUM_ROWS-1)) {
+            let cursor_i = 0;
+        }
+        do Output.moveCursor(cursor_i, cursor_j);
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        let cursor_j = cursor_j - 1;
+        if (cursor_j = (-1)) {
+            let cursor_j = NUM_COLS-1;
+            let cursor_i = cursor_i - 1;
+            if (cursor_i = (-1)) {
+                let cursor_i = 0;
+            }
+        }
+        do Output.moveCursor(cursor_i, cursor_j);
+        return;
     }
 }
